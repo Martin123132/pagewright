@@ -27,6 +27,7 @@ The local `main` branch tracks `origin/main`.
 - `docs/` - architecture, product UI notes, roadmap, public proof, release readiness, release-review outcome template, and commit readiness.
 - `scratch/` - local temporary job data. Ignored by git except `.gitkeep`.
 - `outputs/` - generated user-facing files. Ignored by git except `.gitkeep`.
+- `outputs/release-review-dry-run/` - local-only evidence for release-review dry runs. Ignored by git; paste only sanitized summaries into public issues or PRs.
 
 ## Current Identity
 

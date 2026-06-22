@@ -23,6 +23,8 @@ def main() -> None:
         [sys.executable, "examples/generate_release_review_outcome.py"],
     )
     print("Release-review dry run completed without creating a release, tag, or publish.")
+    print("Dry-run report is local-only evidence under outputs/release-review-dry-run.")
+    print("Paste only sanitized summaries publicly.")
 
 
 def _run(label: str, command: list[str]) -> None:

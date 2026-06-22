@@ -124,6 +124,8 @@ Run the full local release-review dry run with:
 .\.venv\Scripts\python.exe examples\run_release_review_dry_run.py
 ```
 
+The generated dry-run report is local-only evidence under ignored `outputs/release-review-dry-run/`. Keep it out of commits and paste only sanitized summaries into public issues or PRs.
+
 These keep the release checklist tied to Ruff, Pytest, synthetic proof, public readiness checks, D-drive storage assumptions, and the rule that proof outputs must not contain private PDFs, local paths, secrets, or real user documents.
 
 The public readiness check keeps those links, templates, proof-check wiring, and obvious secret-pattern scans from drifting:

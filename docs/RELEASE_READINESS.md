@@ -23,6 +23,8 @@ To prefill a public-safe dry-run outcome, run:
 
 The generated outcome is written under ignored `outputs/release-review-dry-run`.
 
+Treat that folder as local-only evidence. Keep it out of commits and paste only sanitized summaries into public issues or PRs.
+
 To run the full local release-review dry run, including Ruff, Pytest, synthetic proof check, public readiness check, secret-pattern scan, and outcome generation, run:
 
 ```powershell
@@ -52,6 +54,7 @@ To run the full local release-review dry run, including Ruff, Pytest, synthetic 
 - If review outcomes need to be recorded, use `docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md`.
 - If review outcomes need a starter file, run `examples/generate_release_review_outcome.py`.
 - If every local review check should run before writing the starter file, run `examples/run_release_review_dry_run.py`.
+- Confirm `outputs/release-review-dry-run/` is ignored and any public discussion uses only sanitized summaries.
 - Are all examples synthetic or sanitized?
 - Are ignored runtime folders still uncommitted?
 - Is `main` clean and tracking `origin/main`?

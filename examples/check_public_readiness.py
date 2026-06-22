@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -38,6 +39,11 @@ SECRET_PATTERNS = {
     "assigned API key": re.compile(r"(?i)api[_-]?key\s*[:=]\s*['\"][^'\"]+['\"]"),
 }
 
+LOCAL_ONLY_OUTPUTS = [
+    Path("outputs/release-review-dry-run/"),
+    Path("outputs/release-review-dry-run/release-review-outcome.md"),
+]
+
 
 def main() -> None:
     _assert_files_exist(READINESS_FILES)
@@ -46,6 +52,7 @@ def main() -> None:
     _assert_security_policy()
     _assert_issue_templates()
     _assert_ci_wiring()
+    _assert_local_only_outputs_are_ignored()
     _assert_no_secret_patterns()
     print("Public readiness check passed.")
 
@@ -68,6 +75,8 @@ def _assert_readme_links() -> None:
             "docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md",
             "examples\\generate_release_review_outcome.py",
             "examples\\run_release_review_dry_run.py",
+            "local-only evidence",
+            "sanitized summaries",
             "CONTRIBUTING.md",
             "SECURITY.md",
             "Issue Intake",
@@ -95,6 +104,8 @@ def _assert_project_map() -> None:
             "docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md",
             "examples\\generate_release_review_outcome.py",
             "examples\\run_release_review_dry_run.py",
+            "local-only evidence",
+            "sanitized summaries",
         ],
     )
     _assert_release_readiness()
@@ -134,6 +145,9 @@ def _assert_release_readiness() -> None:
             "local absolute paths",
             "secrets",
             "outputs/public-proof",
+            "outputs/release-review-dry-run",
+            "local-only evidence",
+            "sanitized summaries",
             "pdf_forge",
             "pdf_forge_api",
             "pdf-forge",
@@ -162,6 +176,8 @@ def _assert_release_review_outcome_template() -> None:
             "local absolute paths",
             "secrets",
             "proof outputs",
+            "local-only evidence",
+            "sanitized summaries",
         ],
     )
     _assert_release_review_outcome_generator()
@@ -174,6 +190,8 @@ def _assert_release_review_outcome_generator() -> None:
         text,
         [
             "release-review-dry-run",
+            "local-only evidence",
+            "sanitized summaries",
             "GitHub Actions CI run URL",
             "Ruff",
             "Pytest",
@@ -206,9 +224,31 @@ def _assert_release_review_dry_run_command() -> None:
             "Secret-pattern scan",
             "generate_release_review_outcome.py",
             "without creating a release, tag, or publish",
+            "release-review-dry-run",
             "SECRET_PATTERNS",
         ],
     )
+
+
+def _assert_local_only_outputs_are_ignored() -> None:
+    for path in LOCAL_ONLY_OUTPUTS:
+        result = subprocess.run(
+            ["git", "check-ignore", "--quiet", str(path)],
+            cwd=REPO_ROOT,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise AssertionError(f"Local-only dry-run output is not ignored by git: {path}")
+
+        tracked = subprocess.run(
+            ["git", "ls-files", "--error-unmatch", str(path)],
+            cwd=REPO_ROOT,
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        if tracked.returncode == 0:
+            raise AssertionError(f"Local-only dry-run output is tracked by git: {path}")
 
 
 def _assert_issue_templates() -> None:

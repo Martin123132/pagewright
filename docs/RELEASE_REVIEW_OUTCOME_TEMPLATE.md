@@ -14,6 +14,8 @@ To run every local release-review check before generating the ignored starter ou
 .\.venv\Scripts\python.exe examples\run_release_review_dry_run.py
 ```
 
+Generated dry-run outcomes are local-only evidence under ignored `outputs/release-review-dry-run/`. Keep them out of commits and paste only sanitized summaries into public issues or PRs.
+
 ## Review Target
 
 - Commit or range:
