@@ -21,6 +21,7 @@ The local `main` branch tracks `origin/main`.
 - `app/pdf_forge_api/` - FastAPI app, storage policy, demo generators, and static workbench UI.
 - `app/pdf_forge_api/static/` - Pagewright browser UI: routes, staging, settings, presets, recent rail, keyboard flow.
 - `engine/pdf_forge/` - PDF operation engine and CLI implementation.
+- `examples/` - public-safe demo and proof runners using synthetic inputs only.
 - `tests/` - API and engine regression tests.
 - `docs/` - architecture, product UI notes, roadmap, and commit readiness.
 - `scratch/` - local temporary job data. Ignored by git except `.gitkeep`.
@@ -49,7 +50,7 @@ git remote -v
 git status --short --branch
 ```
 
-Before publishing larger changes, review `docs/COMMIT_READINESS.md`, `CONTRIBUTING.md`, and `SECURITY.md`.
+Before publishing larger changes, review `docs/COMMIT_READINESS.md`, `docs/PUBLIC_PROOF.md`, `CONTRIBUTING.md`, and `SECURITY.md`.
 
 ## Run It
 
@@ -71,4 +72,5 @@ http://127.0.0.1:8787/
 ```powershell
 .\.venv\Scripts\python.exe -m ruff check .
 .\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe examples\synthetic_proof.py
 ```

@@ -10,7 +10,7 @@ The project rule for this machine: keep all project files, scratch data, caches,
 D:\CodexProjects\pdf-forge
 ```
 
-Need the quick orientation page? See [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md). Want to help? See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md).
+Need the quick orientation page? See [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md). Want a sanitized demo? See [`docs/PUBLIC_PROOF.md`](docs/PUBLIC_PROOF.md). Want to help? See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md).
 
 ## MVP Scope
 
@@ -87,3 +87,13 @@ The API schema docs are available at:
 ```text
 http://127.0.0.1:8787/docs
 ```
+
+## Synthetic Proof
+
+Run every built-in demo route with generated-only inputs:
+
+```powershell
+.\.venv\Scripts\python.exe examples\synthetic_proof.py
+```
+
+The proof manifest is written under `outputs/public-proof`, which is ignored by git. See [`docs/PUBLIC_PROOF.md`](docs/PUBLIC_PROOF.md) for the expected output shape.
