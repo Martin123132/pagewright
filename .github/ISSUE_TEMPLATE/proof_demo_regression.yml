@@ -1,0 +1,58 @@
+name: Proof or demo regression
+description: Report drift in the public synthetic proof, demo routes, or proof check.
+title: "[proof]: "
+labels: ["proof"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for regressions in the synthetic proof/demo path only. The proof should use generated inputs from `app/pdf_forge_api/demo.py` and ignored output folders. Do not attach real documents or private logs.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - examples/synthetic_proof.py
+        - examples/check_synthetic_proof.py
+        - /jobs/demo API route
+        - docs/PUBLIC_PROOF.md
+        - GitHub Actions CI
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command or CI step
+      description: Which public proof command or CI step failed?
+      placeholder: |
+        .\.venv\Scripts\python.exe examples\check_synthetic_proof.py
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Public-safe result
+      description: Paste the minimal public-safe error or manifest shape. Remove job IDs, local paths, private URLs, and any private data.
+    validations:
+      required: true
+  - type: checkboxes
+    id: expected_operations
+    attributes:
+      label: Operations covered
+      description: Which operations were present before the regression?
+      options:
+        - label: merge
+        - label: split
+        - label: rotate
+        - label: images-to-pdf
+        - label: pdf-to-images
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Public-safety checklist
+      options:
+        - label: I used generated demo/proof inputs only.
+          required: true
+        - label: I removed private paths, job IDs, download URLs, and sensitive data from this report.
+          required: true

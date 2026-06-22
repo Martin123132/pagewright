@@ -22,6 +22,7 @@ The local `main` branch tracks `origin/main`.
 - `app/pdf_forge_api/static/` - Pagewright browser UI: routes, staging, settings, presets, recent rail, keyboard flow.
 - `engine/pdf_forge/` - PDF operation engine and CLI implementation.
 - `examples/` - public-safe demo and proof runners using synthetic inputs only.
+- `.github/ISSUE_TEMPLATE/` - public issue intake forms for conversion bugs, proof regressions, and privacy/security-sensitive reports.
 - `tests/` - API and engine regression tests.
 - `docs/` - architecture, product UI notes, roadmap, and commit readiness.
 - `scratch/` - local temporary job data. Ignored by git except `.gitkeep`.
@@ -41,7 +42,7 @@ Public repository: `Martin123132/pagewright`
 
 Default branch: `main`
 
-Current CI: GitHub Actions workflow at `.github/workflows/ci.yml` runs Ruff and Pytest on pushes and pull requests to `main`.
+Current CI: GitHub Actions workflow at `.github/workflows/ci.yml` runs Ruff, Pytest, and the synthetic proof check on pushes and pull requests to `main`.
 
 Useful checks:
 

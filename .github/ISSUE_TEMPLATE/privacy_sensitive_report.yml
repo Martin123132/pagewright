@@ -1,0 +1,48 @@
+name: Privacy or security-sensitive report
+description: Start a public-safe report without sharing sensitive details.
+title: "[privacy/security]: "
+labels: ["privacy", "security"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Stop before posting sensitive details. GitHub issues are public. Do not include private documents, exploit instructions, credentials, tokens, private URLs, personal data, proprietary data, or local absolute paths. If the issue cannot be described safely, open only a minimal placeholder asking for a private reporting route.
+  - type: dropdown
+    id: report_type
+    attributes:
+      label: Report type
+      options:
+        - Privacy concern that can be described safely
+        - Security concern that can be described safely
+        - Need a private reporting route
+        - Sensitive file accidentally shared elsewhere
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: safe_summary
+    attributes:
+      label: Public-safe summary
+      description: Describe the issue without exploit details, sensitive files, secrets, private URLs, or personal data.
+      placeholder: "Example: A generated manifest appears to include a field that could expose local paths."
+    validations:
+      required: true
+  - type: textarea
+    id: safe_reproduction
+    attributes:
+      label: Sanitized reproduction or affected area
+      description: Use synthetic commands or point to public files only. Leave blank if sharing reproduction details would be unsafe.
+      placeholder: "Example: examples/check_synthetic_proof.py should reject this field shape: ..."
+    validations:
+      required: false
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Public-safety checklist
+      options:
+        - label: I did not include private documents, credentials, tokens, private URLs, personal data, or proprietary data.
+          required: true
+        - label: I did not include exploit instructions or sensitive implementation details.
+          required: true
+        - label: I used only public-safe, synthetic, or sanitized examples.
+          required: true

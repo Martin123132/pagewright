@@ -104,3 +104,7 @@ Check the proof contract without publishing any generated artifacts:
 ```powershell
 .\.venv\Scripts\python.exe examples\check_synthetic_proof.py
 ```
+
+## Issue Intake
+
+Use the GitHub issue forms for conversion bugs, proof/demo regressions, and privacy or security-sensitive reports. Keep every report public-safe: synthetic inputs only, no private documents, no credentials, no private URLs, and no local absolute output paths.
