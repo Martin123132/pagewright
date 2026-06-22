@@ -112,7 +112,7 @@ Use the GitHub issue forms for conversion bugs, proof/demo regressions, release-
 
 ## Release Readiness
 
-Before any future public release, review [`docs/RELEASE_READINESS.md`](docs/RELEASE_READINESS.md). It keeps the release checklist tied to Ruff, Pytest, synthetic proof, public readiness checks, D-drive storage assumptions, and the rule that proof outputs must not contain private PDFs, local paths, secrets, or real user documents.
+Before any future public release, review [`docs/RELEASE_READINESS.md`](docs/RELEASE_READINESS.md). Record dry-run outcomes with [`docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md`](docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md). These keep the release checklist tied to Ruff, Pytest, synthetic proof, public readiness checks, D-drive storage assumptions, and the rule that proof outputs must not contain private PDFs, local paths, secrets, or real user documents.
 
 The public readiness check keeps those links, templates, proof-check wiring, and obvious secret-pattern scans from drifting:
 

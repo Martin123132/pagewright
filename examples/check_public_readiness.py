@@ -11,6 +11,7 @@ READINESS_FILES = [
     Path("docs/PROJECT_MAP.md"),
     Path("docs/PUBLIC_PROOF.md"),
     Path("docs/RELEASE_READINESS.md"),
+    Path("docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md"),
     Path(".github/workflows/ci.yml"),
     Path(".github/ISSUE_TEMPLATE/config.yml"),
     Path(".github/ISSUE_TEMPLATE/conversion_bug.yml"),
@@ -62,6 +63,7 @@ def _assert_readme_links() -> None:
             "docs/PROJECT_MAP.md",
             "docs/PUBLIC_PROOF.md",
             "docs/RELEASE_READINESS.md",
+            "docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md",
             "CONTRIBUTING.md",
             "SECURITY.md",
             "Issue Intake",
@@ -86,9 +88,11 @@ def _assert_project_map() -> None:
             "public readiness check",
             "examples\\check_public_readiness.py",
             "docs/RELEASE_READINESS.md",
+            "docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md",
         ],
     )
     _assert_release_readiness()
+    _assert_release_review_outcome_template()
 
 
 def _assert_security_policy() -> None:
@@ -126,6 +130,31 @@ def _assert_release_readiness() -> None:
             "pdf_forge",
             "pdf_forge_api",
             "pdf-forge",
+        ],
+    )
+
+
+def _assert_release_review_outcome_template() -> None:
+    text = _read("docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md")
+    _require_all(
+        "docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md",
+        text,
+        [
+            "GitHub Actions CI run URL",
+            "Ruff",
+            "Pytest",
+            "Synthetic proof check",
+            "Public readiness check",
+            "Secret-pattern scan",
+            "Sanitized examples only",
+            "D-drive storage assumptions",
+            "pdf_forge",
+            "pdf_forge_api",
+            "pdf-forge",
+            "private PDFs",
+            "local absolute paths",
+            "secrets",
+            "proof outputs",
         ],
     )
 

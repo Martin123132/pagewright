@@ -35,6 +35,7 @@ The GitHub Actions CI workflow must also be green on `main` for Ruff, Pytest, th
 
 - Are README, project map, public proof, security policy, contributing notes, and issue templates linked and current?
 - If release review needs public discussion, use the `release-review` issue template.
+- If review outcomes need to be recorded, use `docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md`.
 - Are all examples synthetic or sanitized?
 - Are ignored runtime folders still uncommitted?
 - Is `main` clean and tracking `origin/main`?
