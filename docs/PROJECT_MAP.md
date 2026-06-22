@@ -42,7 +42,7 @@ Public repository: `Martin123132/pagewright`
 
 Default branch: `main`
 
-Current CI: GitHub Actions workflow at `.github/workflows/ci.yml` runs Ruff, Pytest, and the synthetic proof check on pushes and pull requests to `main`.
+Current CI: GitHub Actions workflow at `.github/workflows/ci.yml` runs Ruff, Pytest, the synthetic proof check, and the public readiness check on pushes and pull requests to `main`.
 
 Useful checks:
 
@@ -75,4 +75,5 @@ http://127.0.0.1:8787/
 .\.venv\Scripts\python.exe -m pytest
 .\.venv\Scripts\python.exe examples\synthetic_proof.py
 .\.venv\Scripts\python.exe examples\check_synthetic_proof.py
+.\.venv\Scripts\python.exe examples\check_public_readiness.py
 ```

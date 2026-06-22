@@ -57,9 +57,10 @@ Run tests:
 .\.venv\Scripts\python.exe -m ruff check .
 .\.venv\Scripts\python.exe -m pytest --basetemp D:\CodexProjects\pdf-forge\scratch\pytest
 .\.venv\Scripts\python.exe examples\check_synthetic_proof.py
+.\.venv\Scripts\python.exe examples\check_public_readiness.py
 ```
 
-GitHub Actions runs the same Ruff, Pytest, and synthetic proof checks on pushes and pull requests to `main`.
+GitHub Actions runs the same Ruff, Pytest, synthetic proof, and public readiness checks on pushes and pull requests to `main`.
 
 ## Local API
 
@@ -108,3 +109,9 @@ Check the proof contract without publishing any generated artifacts:
 ## Issue Intake
 
 Use the GitHub issue forms for conversion bugs, proof/demo regressions, and privacy or security-sensitive reports. Keep every report public-safe: synthetic inputs only, no private documents, no credentials, no private URLs, and no local absolute output paths.
+
+The public readiness check keeps those links, templates, proof-check wiring, and obvious secret-pattern scans from drifting:
+
+```powershell
+.\.venv\Scripts\python.exe examples\check_public_readiness.py
+```

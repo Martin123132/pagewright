@@ -35,3 +35,6 @@ jobs:
 
       - name: Run synthetic proof check
         run: python examples\check_synthetic_proof.py
+
+      - name: Run public readiness check
+        run: python examples\check_public_readiness.py
