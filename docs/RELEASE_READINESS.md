@@ -23,6 +23,12 @@ To prefill a public-safe dry-run outcome, run:
 
 The generated outcome is written under ignored `outputs/release-review-dry-run`.
 
+To run the full local release-review dry run, including Ruff, Pytest, synthetic proof check, public readiness check, secret-pattern scan, and outcome generation, run:
+
+```powershell
+.\.venv\Scripts\python.exe examples\run_release_review_dry_run.py
+```
+
 ## Public-Safe Proof Review
 
 - Use sanitized examples only.
@@ -45,6 +51,7 @@ The generated outcome is written under ignored `outputs/release-review-dry-run`.
 - If release review needs public discussion, use the `release-review` issue template.
 - If review outcomes need to be recorded, use `docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md`.
 - If review outcomes need a starter file, run `examples/generate_release_review_outcome.py`.
+- If every local review check should run before writing the starter file, run `examples/run_release_review_dry_run.py`.
 - Are all examples synthetic or sanitized?
 - Are ignored runtime folders still uncommitted?
 - Is `main` clean and tracking `origin/main`?

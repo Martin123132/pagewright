@@ -118,6 +118,12 @@ Before any future public release, review [`docs/RELEASE_READINESS.md`](docs/RELE
 .\.venv\Scripts\python.exe examples\generate_release_review_outcome.py
 ```
 
+Run the full local release-review dry run with:
+
+```powershell
+.\.venv\Scripts\python.exe examples\run_release_review_dry_run.py
+```
+
 These keep the release checklist tied to Ruff, Pytest, synthetic proof, public readiness checks, D-drive storage assumptions, and the rule that proof outputs must not contain private PDFs, local paths, secrets, or real user documents.
 
 The public readiness check keeps those links, templates, proof-check wiring, and obvious secret-pattern scans from drifting:

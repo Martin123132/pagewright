@@ -13,6 +13,7 @@ READINESS_FILES = [
     Path("docs/RELEASE_READINESS.md"),
     Path("docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md"),
     Path("examples/generate_release_review_outcome.py"),
+    Path("examples/run_release_review_dry_run.py"),
     Path(".github/workflows/ci.yml"),
     Path(".github/ISSUE_TEMPLATE/config.yml"),
     Path(".github/ISSUE_TEMPLATE/conversion_bug.yml"),
@@ -66,6 +67,7 @@ def _assert_readme_links() -> None:
             "docs/RELEASE_READINESS.md",
             "docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md",
             "examples\\generate_release_review_outcome.py",
+            "examples\\run_release_review_dry_run.py",
             "CONTRIBUTING.md",
             "SECURITY.md",
             "Issue Intake",
@@ -92,10 +94,12 @@ def _assert_project_map() -> None:
             "docs/RELEASE_READINESS.md",
             "docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md",
             "examples\\generate_release_review_outcome.py",
+            "examples\\run_release_review_dry_run.py",
         ],
     )
     _assert_release_readiness()
     _assert_release_review_outcome_template()
+    _assert_release_review_dry_run_command()
 
 
 def _assert_security_policy() -> None:
@@ -185,6 +189,24 @@ def _assert_release_review_outcome_generator() -> None:
             "local absolute paths",
             "secrets",
             "_assert_public_manifest",
+        ],
+    )
+
+
+def _assert_release_review_dry_run_command() -> None:
+    text = _read("examples/run_release_review_dry_run.py")
+    _require_all(
+        "examples/run_release_review_dry_run.py",
+        text,
+        [
+            "Ruff",
+            "Pytest",
+            "Synthetic proof check",
+            "Public readiness check",
+            "Secret-pattern scan",
+            "generate_release_review_outcome.py",
+            "without creating a release, tag, or publish",
+            "SECRET_PATTERNS",
         ],
     )
 

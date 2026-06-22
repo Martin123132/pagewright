@@ -8,6 +8,12 @@ To prefill an ignored starter outcome from sanitized synthetic proof outputs, ru
 .\.venv\Scripts\python.exe examples\generate_release_review_outcome.py
 ```
 
+To run every local release-review check before generating the ignored starter outcome, run:
+
+```powershell
+.\.venv\Scripts\python.exe examples\run_release_review_dry_run.py
+```
+
 ## Review Target
 
 - Commit or range:

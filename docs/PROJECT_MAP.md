@@ -77,4 +77,5 @@ http://127.0.0.1:8787/
 .\.venv\Scripts\python.exe examples\check_synthetic_proof.py
 .\.venv\Scripts\python.exe examples\check_public_readiness.py
 .\.venv\Scripts\python.exe examples\generate_release_review_outcome.py
+.\.venv\Scripts\python.exe examples\run_release_review_dry_run.py
 ```
