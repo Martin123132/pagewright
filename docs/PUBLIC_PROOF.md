@@ -50,3 +50,18 @@ pdf-to-images  2 PNGs plus a ZIP bundle
 ```
 
 The file names and sizes may vary slightly as PDF/image libraries change, but every output should be generated from synthetic fixtures only.
+
+## Proof Check
+
+The proof check runs the same synthetic demo into ignored `scratch/public-proof-check` and `outputs/public-proof-check` paths, then asserts:
+
+- all five MVP operations are present in order
+- output entries expose only `file_name` and `size_bytes`
+- bundle entries expose only `file_name`, `size_bytes`, and `file_count`
+- private or volatile fields such as absolute paths, job IDs, storage roots, and download URLs are not present
+
+Run it with:
+
+```powershell
+.\.venv\Scripts\python.exe examples\check_synthetic_proof.py
+```

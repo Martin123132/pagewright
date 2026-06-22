@@ -56,9 +56,10 @@ Run tests:
 ```powershell
 .\.venv\Scripts\python.exe -m ruff check .
 .\.venv\Scripts\python.exe -m pytest --basetemp D:\CodexProjects\pdf-forge\scratch\pytest
+.\.venv\Scripts\python.exe examples\check_synthetic_proof.py
 ```
 
-GitHub Actions runs the same Ruff and Pytest checks on pushes and pull requests to `main`.
+GitHub Actions runs the same Ruff, Pytest, and synthetic proof checks on pushes and pull requests to `main`.
 
 ## Local API
 
@@ -97,3 +98,9 @@ Run every built-in demo route with generated-only inputs:
 ```
 
 The proof manifest is written under `outputs/public-proof`, which is ignored by git. See [`docs/PUBLIC_PROOF.md`](docs/PUBLIC_PROOF.md) for the expected output shape.
+
+Check the proof contract without publishing any generated artifacts:
+
+```powershell
+.\.venv\Scripts\python.exe examples\check_synthetic_proof.py
+```

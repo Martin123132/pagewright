@@ -73,4 +73,5 @@ http://127.0.0.1:8787/
 .\.venv\Scripts\python.exe -m ruff check .
 .\.venv\Scripts\python.exe -m pytest
 .\.venv\Scripts\python.exe examples\synthetic_proof.py
+.\.venv\Scripts\python.exe examples\check_synthetic_proof.py
 ```
