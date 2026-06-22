@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pdf-forge"
+version = "0.1.0"
+description = "Pagewright, a local-first open-source document toolkit."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "Pagewright Contributors" }
+]
+dependencies = [
+  "pillow>=10.4",
+  "pydantic>=2.8",
+  "pymupdf>=1.24",
+  "pypdf>=4.3",
+  "typer>=0.12",
+]
+
+[project.optional-dependencies]
+api = [
+  "fastapi>=0.115",
+  "python-multipart>=0.0.20",
+  "uvicorn[standard]>=0.30",
+]
+dev = [
+  "httpx>=0.28",
+  "pytest>=8.3",
+  "ruff>=0.5",
+]
+
+[project.scripts]
+pdf-forge = "pdf_forge.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["engine/pdf_forge", "app/pdf_forge_api"]
+
+[tool.pytest.ini_options]
+addopts = "--basetemp=scratch/pytest"
+testpaths = ["tests"]
+pythonpath = ["engine", "app"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

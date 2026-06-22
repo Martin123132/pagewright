@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pagewright</title>
+    <link rel="stylesheet" href="/static/styles.css?v=20260621ab" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Pagewright home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img">
+              <path d="M5 5.8h9.2L19 10.6v7.6H5z" />
+              <path d="M14.2 5.8v4.8H19" />
+              <path d="M8.2 14.2h7.4M8.2 17h4.5" />
+            </svg>
+          </span>
+          <span class="brand-text">Pagewright</span>
+        </a>
+        <div class="storage-status" id="storageStatus">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>Local engine</span>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="operation-rail" aria-label="PDF operations">
+          <div class="rail-title">Tools</div>
+          <nav id="operationNav" class="operation-nav"></nav>
+        </aside>
+
+        <section class="job-stage" aria-labelledby="operationTitle">
+          <div class="stage-header">
+            <div>
+              <h1 id="operationTitle">Merge PDFs</h1>
+              <p id="operationTagline">Combine documents into a clean output file.</p>
+            </div>
+            <button class="ghost-button" type="button" id="clearButton">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
+              Reset
+            </button>
+          </div>
+
+          <section class="route-board" aria-labelledby="routeTitle">
+            <div class="route-board-header">
+              <h2 id="routeTitle">Routes</h2>
+              <div class="route-board-actions">
+                <button
+                  class="route-compare-toggle"
+                  type="button"
+                  id="routeCompareToggle"
+                  aria-expanded="false"
+                  aria-controls="routeComparePanel"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4.5 7h15" />
+                    <path d="M7 4.5 4.5 7 7 9.5" />
+                    <path d="M19.5 17h-15" />
+                    <path d="M17 14.5 19.5 17 17 19.5" />
+                    <path d="M9 12h6" />
+                  </svg>
+                  Compare
+                </button>
+                <span id="routePulse" aria-live="polite">Merge ready</span>
+              </div>
+            </div>
+            <div class="route-list" id="routeBoard"></div>
+            <section class="route-compare" id="routeComparePanel" aria-labelledby="routeCompareTitle" hidden>
+              <div class="route-compare-heading">
+                <div>
+                  <div class="route-compare-label">Not sure?</div>
+                  <h3 id="routeCompareTitle">Compare operations</h3>
+                </div>
+                <p id="routeCompareDetail">Match the result you want to the closest local route.</p>
+              </div>
+              <div
+                class="route-compare-filters"
+                id="routeCompareFilters"
+                role="group"
+                aria-label="Operation comparison filters"
+              ></div>
+              <div class="route-compare-list" id="routeCompareList"></div>
+            </section>
+            <div class="route-intel" id="routeIntel">
+              <div class="route-intel-main">
+                <div class="route-intel-label" id="routeIntelLabel">Combine Route</div>
+                <div class="route-intel-title" id="routeIntelTitle">Merge PDFs</div>
+                <div class="route-intel-detail" id="routeIntelDetail">Combine documents into a clean output file.</div>
+              </div>
+              <div class="route-intel-facts" id="routeIntelFacts"></div>
+              <div class="route-intel-actions">
+                <button class="route-intel-primary" type="button" id="routeIntelPrimaryButton" data-route-action="stage-sample">Stage sample</button>
+                <button class="route-intel-secondary" type="button" id="routeIntelSecondaryButton">Try sample</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="mission-strip" id="missionStrip" aria-live="polite">
+            <div class="mission-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="m12 3 1.2 4 3.8 1.2-3.8 1.2L12 13l-1.2-3.6L7 8.2 10.8 7z" />
+                <path d="m17.5 13 .8 2.5 2.2.8-2.2.8-.8 2.4-.8-2.4-2.2-.8 2.2-.8z" />
+              </svg>
+            </div>
+            <div class="mission-copy">
+              <div class="mission-label" id="missionLabel">Next Move</div>
+              <div class="mission-title" id="missionTitle">Stage 2+ PDFs</div>
+              <div class="mission-detail" id="missionDetail">Merge order runs top to bottom.</div>
+              <div class="mission-meter" aria-hidden="true">
+                <span id="missionProgress"></span>
+              </div>
+            </div>
+            <button class="mission-action-button" type="button" id="missionActionButton">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 8.4 12 4l7 4.4-7 4.4z" />
+                <path d="M5 15.6 12 20l7-4.4" />
+              </svg>
+              Stage sample
+            </button>
+          </section>
+
+          <div class="stage-grid">
+            <section class="drop-panel" aria-labelledby="dropTitle">
+              <div class="drop-zone" id="dropZone">
+                <input id="fileInput" class="file-input" type="file" multiple />
+                <div class="drop-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 4v10" />
+                    <path d="m8.5 8 3.5-3.5L15.5 8" />
+                    <path d="M5.5 14.5v3.2c0 1 .8 1.8 1.8 1.8h9.4c1 0 1.8-.8 1.8-1.8v-3.2" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 id="dropTitle">Stage Files</h2>
+                  <p id="dropCopy">Drop files here or browse from this machine.</p>
+                </div>
+                <button class="secondary-button" type="button" id="browseButton">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4.5 6.5h5l1.8 2h8.2v8.8c0 .7-.5 1.2-1.2 1.2H5.7c-.7 0-1.2-.5-1.2-1.2z" />
+                  </svg>
+                  Browse
+                </button>
+                <button class="sample-button" type="button" id="sampleButton">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 5h10v14H7z" />
+                    <path d="M10 8h4M10 11.5h4M10 15h2" />
+                  </svg>
+                  Try sample
+                </button>
+                <button class="stage-sample-button" type="button" id="stageSampleButton">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 8.4 12 4l7 4.4-7 4.4z" />
+                    <path d="M5 15.6 12 20l7-4.4" />
+                    <path d="M5 12 12 16.4 19 12" />
+                  </svg>
+                  Stage sample
+                </button>
+              </div>
+
+              <div class="file-list" id="fileList" aria-live="polite"></div>
+            </section>
+
+            <section class="control-panel" aria-labelledby="settingsTitle">
+              <div class="panel-header">
+                <h2 id="settingsTitle">Settings</h2>
+                <span id="fileRequirement" class="requirement-chip">2+ PDFs</span>
+              </div>
+              <form id="settingsForm" class="settings-form"></form>
+              <div id="presetPanel" class="preset-panel" hidden>
+                <div class="preset-copy">
+                  <div class="preset-label">Route Preset</div>
+                  <div class="preset-title" id="presetTitle">No preset saved</div>
+                </div>
+                <div class="preset-actions">
+                  <button class="preset-secondary" type="button" id="presetApplyButton">Apply</button>
+                  <button class="preset-primary" type="button" id="presetSaveButton">Save</button>
+                </div>
+              </div>
+              <div id="jobPreview" class="job-preview" hidden>
+                <div class="preview-header">
+                  <div>
+                    <div class="preview-label">Job Preview</div>
+                    <div class="preview-title" id="previewTitle">Ready to build</div>
+                  </div>
+                  <span class="preview-chip" id="previewChip">Ready</span>
+                </div>
+                <div class="preview-steps" id="previewSteps"></div>
+              </div>
+              <button class="primary-button" type="button" id="runButton">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M7 4.8 18.2 12 7 19.2z" />
+                </svg>
+                Build
+              </button>
+              <div id="jobMessage" class="job-message" role="status" aria-live="polite"></div>
+              <div id="recoveryPanel" class="recovery-panel" hidden>
+                <div class="recovery-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 4v8" />
+                    <path d="m8.5 8 3.5-3.5L15.5 8" />
+                    <path d="M5.5 14.5v3.2c0 1 .8 1.8 1.8 1.8h9.4c1 0 1.8-.8 1.8-1.8v-3.2" />
+                  </svg>
+                </div>
+                <div class="recovery-copy">
+                  <div class="recovery-title" id="recoveryTitle">Recovery route</div>
+                  <div class="recovery-detail" id="recoveryDetail">Stage files that match this route.</div>
+                </div>
+                <div class="recovery-actions">
+                  <button class="recovery-primary" type="button" id="recoverySampleButton">Stage sample</button>
+                  <button class="recovery-secondary" type="button" id="recoveryClearButton">Clear stage</button>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <section class="results-panel" aria-labelledby="resultsTitle">
+            <div class="panel-header">
+              <h2 id="resultsTitle">Outputs</h2>
+              <span id="resultCount" class="result-count">0 ready</span>
+            </div>
+            <div id="resultsList" class="results-list"></div>
+          </section>
+        </section>
+
+        <aside class="path-rail" aria-label="Job path">
+          <div class="path-card">
+            <div class="path-title">Path</div>
+            <ol id="pathSteps" class="path-steps"></ol>
+          </div>
+          <div class="recent-card">
+            <div class="recent-header">
+              <div class="path-title">Recent</div>
+              <button class="mini-button" type="button" id="clearRecentButton">Clear</button>
+            </div>
+            <label class="recent-keep">
+              <span>Keep</span>
+              <select id="recentLimitSelect">
+                <option value="3">3 jobs</option>
+                <option value="5" selected>5 jobs</option>
+                <option value="10">10 jobs</option>
+              </select>
+            </label>
+            <div id="recentList" class="recent-list"></div>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script src="/static/app.js?v=20260621ab" type="module"></script>
+  </body>
+</html>
