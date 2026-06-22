@@ -21,7 +21,7 @@ The local `main` branch tracks `origin/main`.
 - `app/pdf_forge_api/` - FastAPI app, storage policy, demo generators, and static workbench UI.
 - `app/pdf_forge_api/static/` - Pagewright browser UI: routes, staging, settings, presets, recent rail, keyboard flow.
 - `engine/pdf_forge/` - PDF operation engine and CLI implementation.
-- `examples/` - public-safe demo and proof runners using synthetic inputs only.
+- `examples/` - public-safe demo, proof, readiness, and release-review dry-run helpers using synthetic inputs only.
 - `.github/ISSUE_TEMPLATE/` - public issue intake forms for conversion bugs, proof regressions, release-review issues, and privacy/security-sensitive reports.
 - `tests/` - API and engine regression tests.
 - `docs/` - architecture, product UI notes, roadmap, public proof, release readiness, release-review outcome template, and commit readiness.
@@ -76,4 +76,5 @@ http://127.0.0.1:8787/
 .\.venv\Scripts\python.exe examples\synthetic_proof.py
 .\.venv\Scripts\python.exe examples\check_synthetic_proof.py
 .\.venv\Scripts\python.exe examples\check_public_readiness.py
+.\.venv\Scripts\python.exe examples\generate_release_review_outcome.py
 ```

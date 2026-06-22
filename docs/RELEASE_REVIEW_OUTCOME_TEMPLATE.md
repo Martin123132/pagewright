@@ -2,6 +2,12 @@
 
 Use this template to record a public-safe first-release dry run or release-review outcome. This file is a template only; it does not create, tag, or publish a release.
 
+To prefill an ignored starter outcome from sanitized synthetic proof outputs, run:
+
+```powershell
+.\.venv\Scripts\python.exe examples\generate_release_review_outcome.py
+```
+
 ## Review Target
 
 - Commit or range:

@@ -15,6 +15,14 @@ Run these from the D-drive project checkout before preparing release notes or ta
 
 The GitHub Actions CI workflow must also be green on `main` for Ruff, Pytest, the synthetic proof check, and the public readiness check.
 
+To prefill a public-safe dry-run outcome, run:
+
+```powershell
+.\.venv\Scripts\python.exe examples\generate_release_review_outcome.py
+```
+
+The generated outcome is written under ignored `outputs/release-review-dry-run`.
+
 ## Public-Safe Proof Review
 
 - Use sanitized examples only.
@@ -36,6 +44,7 @@ The GitHub Actions CI workflow must also be green on `main` for Ruff, Pytest, th
 - Are README, project map, public proof, security policy, contributing notes, and issue templates linked and current?
 - If release review needs public discussion, use the `release-review` issue template.
 - If review outcomes need to be recorded, use `docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md`.
+- If review outcomes need a starter file, run `examples/generate_release_review_outcome.py`.
 - Are all examples synthetic or sanitized?
 - Are ignored runtime folders still uncommitted?
 - Is `main` clean and tracking `origin/main`?

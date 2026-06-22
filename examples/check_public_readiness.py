@@ -12,6 +12,7 @@ READINESS_FILES = [
     Path("docs/PUBLIC_PROOF.md"),
     Path("docs/RELEASE_READINESS.md"),
     Path("docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md"),
+    Path("examples/generate_release_review_outcome.py"),
     Path(".github/workflows/ci.yml"),
     Path(".github/ISSUE_TEMPLATE/config.yml"),
     Path(".github/ISSUE_TEMPLATE/conversion_bug.yml"),
@@ -64,6 +65,7 @@ def _assert_readme_links() -> None:
             "docs/PUBLIC_PROOF.md",
             "docs/RELEASE_READINESS.md",
             "docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md",
+            "examples\\generate_release_review_outcome.py",
             "CONTRIBUTING.md",
             "SECURITY.md",
             "Issue Intake",
@@ -89,6 +91,7 @@ def _assert_project_map() -> None:
             "examples\\check_public_readiness.py",
             "docs/RELEASE_READINESS.md",
             "docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md",
+            "examples\\generate_release_review_outcome.py",
         ],
     )
     _assert_release_readiness()
@@ -155,6 +158,33 @@ def _assert_release_review_outcome_template() -> None:
             "local absolute paths",
             "secrets",
             "proof outputs",
+        ],
+    )
+    _assert_release_review_outcome_generator()
+
+
+def _assert_release_review_outcome_generator() -> None:
+    text = _read("examples/generate_release_review_outcome.py")
+    _require_all(
+        "examples/generate_release_review_outcome.py",
+        text,
+        [
+            "release-review-dry-run",
+            "GitHub Actions CI run URL",
+            "Ruff",
+            "Pytest",
+            "Synthetic proof check",
+            "Public readiness check",
+            "Secret-pattern scan",
+            "Sanitized examples only",
+            "D-drive storage assumptions",
+            "pdf_forge",
+            "pdf_forge_api",
+            "pdf-forge",
+            "private PDFs",
+            "local absolute paths",
+            "secrets",
+            "_assert_public_manifest",
         ],
     )
 
