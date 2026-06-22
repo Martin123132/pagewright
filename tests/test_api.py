@@ -80,6 +80,10 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert "getSuggestedOutputName" in response.text
     assert "sanitizeOutputStem" in response.text
     assert "dataset.suggested" in response.text
+    assert "Drag to reorder" in response.text
+    assert "handleFileDragStart" in response.text
+    assert "handleFileDrop" in response.text
+    assert "reorderStagedFile" in response.text
     assert "Current first:" in response.text
     assert "Order path" in response.text
     assert "Earlier" in response.text

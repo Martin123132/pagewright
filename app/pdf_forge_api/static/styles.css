@@ -984,6 +984,20 @@ h1 {
   grid-template-columns: 34px minmax(130px, 1fr);
 }
 
+.file-row[draggable="true"] {
+  cursor: grab;
+}
+
+.file-row[data-dragging="true"] {
+  cursor: grabbing;
+  opacity: 0.58;
+}
+
+.file-row[data-drop-target="true"] {
+  border-color: rgba(217, 141, 36, 0.72);
+  box-shadow: inset 0 0 0 2px rgba(217, 141, 36, 0.18);
+}
+
 .claim-card {
   grid-template-columns: 42px minmax(0, 1fr) auto;
   min-height: 72px;
@@ -1134,6 +1148,13 @@ h1 {
   background: var(--blue);
   font-size: 12px;
   font-weight: 820;
+}
+
+.file-drag-hint {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 720;
 }
 
 .file-actions {

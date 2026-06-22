@@ -209,6 +209,7 @@ const state = {
   bundle: null,
   compareIntent: "all",
   compareOpen: false,
+  dragFileIndex: null,
   files: [],
   outputNameTouched: false,
   presets: {},
@@ -506,11 +507,12 @@ function renderFiles() {
       .map((file, index) => {
         const position = index + 1;
         return `
-          <div class="file-row">
+          <div class="file-row" draggable="${reorderable ? "true" : "false"}" data-file-index="${index}">
             <div class="file-order">${position}</div>
             <div class="file-meta">
               <div class="file-name">${escapeHtml(file.name)}</div>
               <div class="file-size">${formatBytes(file.size)} - ${fileExtension(file.name).toUpperCase()}</div>
+              ${reorderable ? '<div class="file-drag-hint">Drag to reorder</div>' : ""}
             </div>
             <div class="file-actions">
               ${
@@ -1266,21 +1268,77 @@ function addFiles(fileList) {
 }
 
 function moveStagedFile(index, direction) {
-  const targetIndex = index + direction;
-  if (targetIndex < 0 || targetIndex >= state.files.length) return;
+  reorderStagedFile(index, index + direction);
+}
+
+function reorderStagedFile(index, targetIndex) {
+  if (targetIndex < 0 || targetIndex >= state.files.length || index === targetIndex) return;
   const nextFiles = [...state.files];
   const [file] = nextFiles.splice(index, 1);
   nextFiles.splice(targetIndex, 0, file);
   state.files = nextFiles;
-  state.bundle = null;
-  state.lastReceipt = null;
-  state.recovery = null;
-  state.results = [];
+  clearStagedOutputState();
   renderFiles();
   renderResults();
   renderRouteIntel();
   renderMessage("Stage order updated.");
   focusNextStep();
+}
+
+function clearStagedOutputState() {
+  state.bundle = null;
+  state.lastReceipt = null;
+  state.recovery = null;
+  state.results = [];
+}
+
+function handleFileDragStart(event) {
+  const row = event.target.closest(".file-row[draggable='true']");
+  if (!row) return;
+  const index = Number(row.dataset.fileIndex);
+  if (!Number.isInteger(index)) return;
+  state.dragFileIndex = index;
+  row.dataset.dragging = "true";
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", String(index));
+}
+
+function handleFileDragOver(event) {
+  const row = event.target.closest(".file-row[draggable='true']");
+  if (state.dragFileIndex === null || !row) return;
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "move";
+  clearFileDropTargets();
+  row.dataset.dropTarget = "true";
+}
+
+function handleFileDrop(event) {
+  const row = event.target.closest(".file-row[draggable='true']");
+  if (state.dragFileIndex === null || !row) return;
+  event.preventDefault();
+  const fromIndex = Number(event.dataTransfer.getData("text/plain") || state.dragFileIndex);
+  const targetIndex = Number(row.dataset.fileIndex);
+  clearFileDragState();
+  if (!Number.isInteger(fromIndex) || !Number.isInteger(targetIndex)) return;
+  reorderStagedFile(fromIndex, targetIndex);
+}
+
+function handleFileDragEnd() {
+  clearFileDragState();
+}
+
+function clearFileDragState() {
+  state.dragFileIndex = null;
+  clearFileDropTargets();
+  dom.fileList.querySelectorAll("[data-dragging]").forEach((row) => {
+    delete row.dataset.dragging;
+  });
+}
+
+function clearFileDropTargets() {
+  dom.fileList.querySelectorAll("[data-drop-target]").forEach((row) => {
+    delete row.dataset.dropTarget;
+  });
 }
 
 async function runJob() {
@@ -1654,6 +1712,10 @@ dom.fileList.addEventListener("click", (event) => {
   renderResults();
   renderMessage();
 });
+dom.fileList.addEventListener("dragstart", handleFileDragStart);
+dom.fileList.addEventListener("dragover", handleFileDragOver);
+dom.fileList.addEventListener("drop", handleFileDrop);
+dom.fileList.addEventListener("dragend", handleFileDragEnd);
 
 dom.resultsList.addEventListener("click", (event) => {
   const repeatButton = event.target.closest("[data-repeat-job]");
