@@ -10,7 +10,7 @@ The project rule for this machine: keep all project files, scratch data, caches,
 D:\CodexProjects\pdf-forge
 ```
 
-Need the quick orientation page? See [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md). Want a sanitized demo? See [`docs/PUBLIC_PROOF.md`](docs/PUBLIC_PROOF.md). Want to help? See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md).
+Need the quick orientation page? See [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md). Want a sanitized demo? See [`docs/PUBLIC_PROOF.md`](docs/PUBLIC_PROOF.md). Future release review lives in [`docs/RELEASE_READINESS.md`](docs/RELEASE_READINESS.md). Want to help? See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md).
 
 ## MVP Scope
 
@@ -109,6 +109,10 @@ Check the proof contract without publishing any generated artifacts:
 ## Issue Intake
 
 Use the GitHub issue forms for conversion bugs, proof/demo regressions, and privacy or security-sensitive reports. Keep every report public-safe: synthetic inputs only, no private documents, no credentials, no private URLs, and no local absolute output paths.
+
+## Release Readiness
+
+Before any future public release, review [`docs/RELEASE_READINESS.md`](docs/RELEASE_READINESS.md). It keeps the release checklist tied to Ruff, Pytest, synthetic proof, public readiness checks, D-drive storage assumptions, and the rule that proof outputs must not contain private PDFs, local paths, secrets, or real user documents.
 
 The public readiness check keeps those links, templates, proof-check wiring, and obvious secret-pattern scans from drifting:
 

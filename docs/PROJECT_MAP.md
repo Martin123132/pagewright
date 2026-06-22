@@ -24,7 +24,7 @@ The local `main` branch tracks `origin/main`.
 - `examples/` - public-safe demo and proof runners using synthetic inputs only.
 - `.github/ISSUE_TEMPLATE/` - public issue intake forms for conversion bugs, proof regressions, and privacy/security-sensitive reports.
 - `tests/` - API and engine regression tests.
-- `docs/` - architecture, product UI notes, roadmap, and commit readiness.
+- `docs/` - architecture, product UI notes, roadmap, public proof, release readiness, and commit readiness.
 - `scratch/` - local temporary job data. Ignored by git except `.gitkeep`.
 - `outputs/` - generated user-facing files. Ignored by git except `.gitkeep`.
 
@@ -51,7 +51,7 @@ git remote -v
 git status --short --branch
 ```
 
-Before publishing larger changes, review `docs/COMMIT_READINESS.md`, `docs/PUBLIC_PROOF.md`, `CONTRIBUTING.md`, and `SECURITY.md`.
+Before publishing larger changes, review `docs/COMMIT_READINESS.md`, `docs/PUBLIC_PROOF.md`, `docs/RELEASE_READINESS.md`, `CONTRIBUTING.md`, and `SECURITY.md`.
 
 ## Run It
 

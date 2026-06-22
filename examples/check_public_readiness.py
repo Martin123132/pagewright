@@ -10,6 +10,7 @@ READINESS_FILES = [
     Path("SECURITY.md"),
     Path("docs/PROJECT_MAP.md"),
     Path("docs/PUBLIC_PROOF.md"),
+    Path("docs/RELEASE_READINESS.md"),
     Path(".github/workflows/ci.yml"),
     Path(".github/ISSUE_TEMPLATE/config.yml"),
     Path(".github/ISSUE_TEMPLATE/conversion_bug.yml"),
@@ -58,11 +59,13 @@ def _assert_readme_links() -> None:
         [
             "docs/PROJECT_MAP.md",
             "docs/PUBLIC_PROOF.md",
+            "docs/RELEASE_READINESS.md",
             "CONTRIBUTING.md",
             "SECURITY.md",
             "Issue Intake",
             "examples\\check_synthetic_proof.py",
             "examples\\check_public_readiness.py",
+            "Release Readiness",
         ],
     )
 
@@ -78,8 +81,10 @@ def _assert_project_map() -> None:
             "synthetic proof check",
             "public readiness check",
             "examples\\check_public_readiness.py",
+            "docs/RELEASE_READINESS.md",
         ],
     )
+    _assert_release_readiness()
 
 
 def _assert_security_policy() -> None:
@@ -94,6 +99,29 @@ def _assert_security_policy() -> None:
             "credentials",
             "private urls",
             "local absolute paths",
+        ],
+    )
+
+
+def _assert_release_readiness() -> None:
+    text = _read("docs/RELEASE_READINESS.md")
+    _require_all(
+        "docs/RELEASE_READINESS.md",
+        text,
+        [
+            "Ruff",
+            "Pytest",
+            "synthetic proof check",
+            "public readiness check",
+            "sanitized examples only",
+            "D-drive",
+            "private PDFs",
+            "local absolute paths",
+            "secrets",
+            "outputs/public-proof",
+            "pdf_forge",
+            "pdf_forge_api",
+            "pdf-forge",
         ],
     )
 
