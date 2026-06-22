@@ -2,13 +2,19 @@
 
 Date: 2026-06-22
 
-Pagewright currently lives only on this machine at:
+Pagewright currently lives on this machine at:
 
 ```text
 D:\CodexProjects\pdf-forge
 ```
 
-There is a local git repository on `main`, but no commits and no GitHub remote yet.
+The public GitHub repository is:
+
+```text
+https://github.com/Martin123132/pagewright
+```
+
+The local `main` branch tracks `origin/main`.
 
 ## What Lives Where
 
@@ -30,7 +36,11 @@ There is a local git repository on `main`, but no commits and no GitHub remote y
 
 ## GitHub Status
 
-No GitHub repository is configured yet.
+Public repository: `Martin123132/pagewright`
+
+Default branch: `main`
+
+Current CI: GitHub Actions workflow at `.github/workflows/ci.yml` runs Ruff and Pytest on pushes and pull requests to `main`.
 
 Useful checks:
 
@@ -39,7 +49,7 @@ git remote -v
 git status --short --branch
 ```
 
-Before publishing, review `docs/COMMIT_READINESS.md`.
+Before publishing larger changes, review `docs/COMMIT_READINESS.md`, `CONTRIBUTING.md`, and `SECURITY.md`.
 
 ## Run It
 

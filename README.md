@@ -1,5 +1,7 @@
 # Pagewright
 
+[![CI](https://github.com/Martin123132/pagewright/actions/workflows/ci.yml/badge.svg)](https://github.com/Martin123132/pagewright/actions/workflows/ci.yml)
+
 Pagewright is a local-first, open-source document toolkit aimed at replacing everyday paid PDF subscriptions for common document work.
 
 The project rule for this machine: keep all project files, scratch data, caches, build artifacts, and generated outputs on `D:`. This repo lives at:
@@ -8,7 +10,7 @@ The project rule for this machine: keep all project files, scratch data, caches,
 D:\CodexProjects\pdf-forge
 ```
 
-Need the quick orientation page? See [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md).
+Need the quick orientation page? See [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md). Want to help? See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md).
 
 ## MVP Scope
 
@@ -52,8 +54,11 @@ Run the CLI:
 Run tests:
 
 ```powershell
+.\.venv\Scripts\python.exe -m ruff check .
 .\.venv\Scripts\python.exe -m pytest --basetemp D:\CodexProjects\pdf-forge\scratch\pytest
 ```
+
+GitHub Actions runs the same Ruff and Pytest checks on pushes and pull requests to `main`.
 
 ## Local API
 
