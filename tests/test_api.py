@@ -158,6 +158,30 @@ def test_merge_job_uses_sanitized_output_name(client: TestClient) -> None:
     assert Path(data["files"][0]["path"]).drive.lower() == "d:"
 
 
+def test_merge_job_requires_two_pdfs(client: TestClient) -> None:
+    response = client.post(
+        "/jobs/merge",
+        files=[("files", ("only.pdf", _pdf_bytes(pages=1), "application/pdf"))],
+    )
+
+    assert response.status_code == 400
+    assert "At least 2 files" in response.json()["detail"]
+
+
+def test_merge_job_rejects_non_pdf_upload(client: TestClient) -> None:
+    response = client.post(
+        "/jobs/merge",
+        files=[
+            ("files", ("first.pdf", _pdf_bytes(pages=1), "application/pdf")),
+            ("files", ("notes.txt", b"not a pdf", "text/plain")),
+        ],
+    )
+
+    assert response.status_code == 400
+    assert "Unsupported file type" in response.json()["detail"]
+    assert ".pdf" in response.json()["detail"]
+
+
 def test_split_job_uses_named_outputs_and_bundle(client: TestClient) -> None:
     response = client.post(
         "/jobs/split",
@@ -174,6 +198,17 @@ def test_split_job_uses_named_outputs_and_bundle(client: TestClient) -> None:
     assert data["bundle"]["file_name"] == "Chapter_Pages-results.zip"
 
 
+def test_split_job_rejects_non_pdf_upload(client: TestClient) -> None:
+    response = client.post(
+        "/jobs/split",
+        data={"pages": "1"},
+        files={"file": ("notes.txt", b"not a pdf", "text/plain")},
+    )
+
+    assert response.status_code == 400
+    assert "Unsupported file type" in response.json()["detail"]
+
+
 def test_images_to_pdf_job(client: TestClient) -> None:
     response = client.post(
         "/jobs/images-to-pdf",
@@ -184,6 +219,17 @@ def test_images_to_pdf_job(client: TestClient) -> None:
     output = Path(response.json()["files"][0]["path"])
     assert output.drive.lower() == "d:"
     assert len(PdfReader(str(output)).pages) == 1
+
+
+def test_images_to_pdf_job_rejects_non_image_upload(client: TestClient) -> None:
+    response = client.post(
+        "/jobs/images-to-pdf",
+        files=[("files", ("source.pdf", _pdf_bytes(), "application/pdf"))],
+    )
+
+    assert response.status_code == 400
+    assert "Unsupported file type" in response.json()["detail"]
+    assert ".png" in response.json()["detail"]
 
 
 def test_demo_merge_job_uses_real_engine_and_d_scoped_outputs(client: TestClient) -> None:

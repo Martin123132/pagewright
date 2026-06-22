@@ -5,8 +5,8 @@ This folder is reserved for the API and UI.
 The FastAPI service exposes the engine through local job endpoints with:
 
 - isolated job directories under `D:\CodexProjects\pdf-forge\scratch`
-- upload size limits
-- automatic cleanup
+- route-level upload validation for expected file types
+- merge validation that requires at least two PDFs
 - structured operation errors
 - output files written under `D:\CodexProjects\pdf-forge\outputs`
 

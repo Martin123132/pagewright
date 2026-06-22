@@ -33,6 +33,8 @@ from pdf_forge_api.storage import (
 )
 
 OPERATIONS = ["merge", "split", "rotate", "images-to-pdf", "pdf-to-images"]
+IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".png", ".webp"}
+PDF_EXTENSIONS = {".pdf"}
 
 
 def create_app(paths: StoragePaths | None = None) -> FastAPI:
@@ -61,7 +63,13 @@ def create_app(paths: StoragePaths | None = None) -> FastAPI:
         output_name: Annotated[str | None, Form(description="Optional output file name.")] = None,
     ) -> JobResult:
         job_id, upload_dir, output_dir = _prepare_job(storage_paths)
-        inputs = await _save_uploads(files, upload_dir, "input.pdf")
+        inputs = await _save_uploads(
+            files,
+            upload_dir,
+            "input.pdf",
+            allowed_extensions=PDF_EXTENSIONS,
+            min_files=2,
+        )
         output = _named_output(output_dir, output_name, "merged", ".pdf")
         return _run_job("merge", job_id, storage_paths, lambda: [merge_pdfs(inputs, output)])
 
@@ -78,7 +86,12 @@ def create_app(paths: StoragePaths | None = None) -> FastAPI:
         ] = None,
     ) -> JobResult:
         job_id, upload_dir, output_dir = _prepare_job(storage_paths)
-        input_pdf = await save_upload(file, upload_dir, "input.pdf")
+        input_pdf = await _save_single_upload(
+            file,
+            upload_dir,
+            "input.pdf",
+            allowed_extensions=PDF_EXTENSIONS,
+        )
         output_stem = _output_stem(output_name, Path(input_pdf).stem)
         return _run_job(
             "split",
@@ -95,7 +108,12 @@ def create_app(paths: StoragePaths | None = None) -> FastAPI:
         output_name: Annotated[str | None, Form(description="Optional output file name.")] = None,
     ) -> JobResult:
         job_id, upload_dir, output_dir = _prepare_job(storage_paths)
-        input_pdf = await save_upload(file, upload_dir, "input.pdf")
+        input_pdf = await _save_single_upload(
+            file,
+            upload_dir,
+            "input.pdf",
+            allowed_extensions=PDF_EXTENSIONS,
+        )
         output = _named_output(
             output_dir,
             output_name,
@@ -115,7 +133,12 @@ def create_app(paths: StoragePaths | None = None) -> FastAPI:
         output_name: Annotated[str | None, Form(description="Optional output file name.")] = None,
     ) -> JobResult:
         job_id, upload_dir, output_dir = _prepare_job(storage_paths)
-        inputs = await _save_uploads(files, upload_dir, "image.png")
+        inputs = await _save_uploads(
+            files,
+            upload_dir,
+            "image.png",
+            allowed_extensions=IMAGE_EXTENSIONS,
+        )
         output = _named_output(output_dir, output_name, "images", ".pdf")
         return _run_job(
             "images-to-pdf",
@@ -134,7 +157,12 @@ def create_app(paths: StoragePaths | None = None) -> FastAPI:
         ] = None,
     ) -> JobResult:
         job_id, upload_dir, output_dir = _prepare_job(storage_paths)
-        input_pdf = await save_upload(file, upload_dir, "input.pdf")
+        input_pdf = await _save_single_upload(
+            file,
+            upload_dir,
+            "input.pdf",
+            allowed_extensions=PDF_EXTENSIONS,
+        )
         output_stem = _output_stem(output_name, Path(input_pdf).stem)
         return _run_job(
             "pdf-to-images",
@@ -256,16 +284,41 @@ async def _save_uploads(
     files: list[UploadFile],
     upload_dir: Path,
     fallback_name: str,
+    *,
+    allowed_extensions: set[str],
+    min_files: int = 1,
 ) -> list[Path]:
-    if not files:
-        raise HTTPException(status_code=400, detail="At least one file is required.")
+    if len(files) < min_files:
+        raise HTTPException(status_code=400, detail=f"At least {min_files} files are required.")
 
     saved_files: list[Path] = []
     for index, upload in enumerate(files, start=1):
+        _validate_upload_extension(upload, allowed_extensions)
         stem = Path(fallback_name).stem
         suffix = Path(fallback_name).suffix
         saved_files.append(await save_upload(upload, upload_dir, f"{stem}-{index}{suffix}"))
     return saved_files
+
+
+async def _save_single_upload(
+    upload: UploadFile,
+    upload_dir: Path,
+    fallback_name: str,
+    *,
+    allowed_extensions: set[str],
+) -> Path:
+    _validate_upload_extension(upload, allowed_extensions)
+    return await save_upload(upload, upload_dir, fallback_name)
+
+
+def _validate_upload_extension(upload: UploadFile, allowed_extensions: set[str]) -> None:
+    extension = Path(upload.filename or "").suffix.lower()
+    if extension not in allowed_extensions:
+        expected = ", ".join(sorted(allowed_extensions))
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type. Expected: {expected}.",
+        )
 
 
 def _run_job(
