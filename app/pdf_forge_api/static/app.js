@@ -210,6 +210,7 @@ const state = {
   compareIntent: "all",
   compareOpen: false,
   files: [],
+  outputNameTouched: false,
   presets: {},
   recent: [],
   recentLimit: 5,
@@ -488,6 +489,7 @@ function renderField(field) {
 }
 
 function renderFiles() {
+  syncSuggestedOutputName();
   if (state.files.length === 0) {
     dom.fileList.innerHTML = `
       <div class="staging-summary">
@@ -589,10 +591,11 @@ function canRunJob() {
 
 function renderOrderGuide(operation) {
   if (!isOrderSensitive(operation) || state.files.length < 2) return "";
+  const firstFile = state.files[0]?.name || "Top file";
   return `
     <div class="order-guide">
       <span class="order-guide-label">Order path</span>
-      <span class="order-guide-copy">Top file becomes first. Move files to change the output sequence.</span>
+      <span class="order-guide-copy">Current first: ${escapeHtml(firstFile)}. Move files to change the output sequence.</span>
     </div>
   `;
 }
@@ -603,9 +606,9 @@ function isOrderSensitive(operation) {
 
 function getOrderSummary() {
   if (state.files.length < 2) return "Single item";
-  const first = state.files[0].name;
-  const last = state.files[state.files.length - 1].name;
-  return `${first} first, ${last} last`;
+  const names = state.files.map((file) => file.name);
+  if (names.length <= 4) return names.join(" > ");
+  return `${names.slice(0, 3).join(" > ")} > ... > ${names[names.length - 1]}`;
 }
 
 function getSettingsSummary(operation) {
@@ -634,6 +637,7 @@ function applyFieldValues(values) {
     const field = dom.settingsForm.elements[fieldId];
     if (field) field.value = value;
   }
+  state.outputNameTouched = Boolean(values.output_name);
   handleSettingsChange();
 }
 
@@ -674,7 +678,11 @@ function applyRoutePreset() {
   renderMessage(`Applied ${currentOperation().label.toLowerCase()} preset.`, "success");
 }
 
-function handleSettingsChange() {
+function handleSettingsChange(event) {
+  if (event?.target?.name === "output_name") {
+    state.outputNameTouched = true;
+    event.target.dataset.suggested = "false";
+  }
   renderPresetPanel();
   renderJobPreview();
 }
@@ -691,6 +699,47 @@ function getPreviewOutput(operation) {
 
 function getOutputNameValue() {
   return dom.settingsForm.elements.output_name?.value.trim() || "";
+}
+
+function syncSuggestedOutputName() {
+  const outputName = dom.settingsForm.elements.output_name;
+  if (!outputName) return;
+
+  if (state.files.length === 0) {
+    if (!state.outputNameTouched) outputName.value = "";
+    outputName.dataset.suggested = "false";
+    return;
+  }
+
+  if (state.outputNameTouched) {
+    outputName.dataset.suggested = "false";
+    return;
+  }
+
+  const suggestedName = getSuggestedOutputName();
+  if (!suggestedName) return;
+  outputName.value = suggestedName;
+  outputName.dataset.suggested = "true";
+}
+
+function getSuggestedOutputName(operation = currentOperation()) {
+  const sourceName = state.files[0]?.name || "";
+  const sourceStem = sanitizeOutputStem(sourceName.replace(/\.[^.]+$/, ""));
+  if (!sourceStem) return "";
+
+  const suffixes = {
+    merge: "merged",
+    split: "pages",
+    rotate: "rotated",
+    "images-to-pdf": "document",
+    "pdf-to-images": "images",
+  };
+  const suffix = suffixes[state.operationKey] || operation.label.toLowerCase();
+  return `${sourceStem}-${suffix}`;
+}
+
+function sanitizeOutputStem(value) {
+  return value.replace(/[^A-Za-z0-9._-]+/g, "_").replace(/^[._\s]+|[._\s]+$/g, "");
 }
 
 function renderResults() {
@@ -1066,6 +1115,7 @@ function resetWorkbench(message = "") {
   state.bundle = null;
   state.files = [];
   state.lastReceipt = null;
+  state.outputNameTouched = false;
   state.recovery = null;
   state.results = [];
   state.running = false;
@@ -1161,6 +1211,7 @@ function setOperation(key) {
   state.operationKey = key;
   state.bundle = null;
   state.files = [];
+  state.outputNameTouched = false;
   state.recovery = null;
   state.results = [];
   state.running = false;
@@ -1343,6 +1394,7 @@ async function runDemoJob() {
 function stageSampleFiles() {
   state.bundle = null;
   state.lastReceipt = null;
+  state.outputNameTouched = false;
   state.recovery = null;
   state.results = [];
   state.files = sampleFilesForOperation(state.operationKey);
@@ -1358,6 +1410,7 @@ function clearStage() {
   state.bundle = null;
   state.files = [];
   state.lastReceipt = null;
+  state.outputNameTouched = false;
   state.recovery = null;
   state.results = [];
   state.running = false;

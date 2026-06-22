@@ -1294,6 +1294,13 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+.field input[data-suggested="true"] {
+  border-color: rgba(55, 122, 84, 0.38);
+  background:
+    linear-gradient(135deg, rgba(55, 122, 84, 0.09), transparent 58%),
+    var(--panel);
+}
+
 .preset-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

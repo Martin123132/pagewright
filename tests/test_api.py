@@ -76,6 +76,11 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert "clearStage" in response.text
     assert "orderSensitiveRoutes" in response.text
     assert "getOrderSummary" in response.text
+    assert "syncSuggestedOutputName" in response.text
+    assert "getSuggestedOutputName" in response.text
+    assert "sanitizeOutputStem" in response.text
+    assert "dataset.suggested" in response.text
+    assert "Current first:" in response.text
     assert "Order path" in response.text
     assert "Earlier" in response.text
     assert "Later" in response.text
