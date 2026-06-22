@@ -1,0 +1,63 @@
+name: First release review
+description: Open a public-safe review checklist before a future first release.
+title: "[release-review]: "
+labels: ["release-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this to review readiness for a future release. This issue does not create, tag, or publish a release. Keep the review public-safe: sanitized examples only, generated proof inputs only, and no private PDFs, real user documents, local absolute paths, secrets, credentials, tokens, private URLs, or proprietary data in proof outputs, logs, screenshots, or notes.
+  - type: textarea
+    id: scope
+    attributes:
+      label: Release review scope
+      description: What future release, milestone, or commit range is being reviewed?
+      placeholder: "Example: first public preview readiness on main at <commit>."
+    validations:
+      required: true
+  - type: checkboxes
+    id: required_checks
+    attributes:
+      label: Required checks
+      options:
+        - label: Ruff passed.
+          required: true
+        - label: Pytest passed.
+          required: true
+        - label: Synthetic proof check passed.
+          required: true
+        - label: Public readiness check passed.
+          required: true
+        - label: GitHub Actions CI is green on main.
+          required: true
+  - type: checkboxes
+    id: public_safety
+    attributes:
+      label: Public-safety review
+      options:
+        - label: I used sanitized examples only.
+          required: true
+        - label: Proof outputs use generated synthetic inputs only.
+          required: true
+        - label: Proof outputs do not include private PDFs, real user documents, local absolute paths, secrets, credentials, tokens, private URLs, or proprietary data.
+          required: true
+        - label: Ignored runtime folders such as outputs/public-proof and outputs/public-proof-check remain uncommitted.
+          required: true
+  - type: checkboxes
+    id: compatibility
+    attributes:
+      label: Compatibility and storage assumptions
+      options:
+        - label: D-drive storage assumptions are still documented.
+          required: true
+        - label: Internal compatibility names pdf_forge and pdf_forge_api are preserved.
+          required: true
+        - label: CLI compatibility command pdf-forge is preserved.
+          required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Public-safe notes
+      description: Summarize anything that needs follow-up without including private files, local absolute paths, secrets, or sensitive implementation details.
+    validations:
+      required: false

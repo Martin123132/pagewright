@@ -16,12 +16,14 @@ READINESS_FILES = [
     Path(".github/ISSUE_TEMPLATE/conversion_bug.yml"),
     Path(".github/ISSUE_TEMPLATE/proof_demo_regression.yml"),
     Path(".github/ISSUE_TEMPLATE/privacy_sensitive_report.yml"),
+    Path(".github/ISSUE_TEMPLATE/release_review.yml"),
 ]
 
 ISSUE_TEMPLATES = {
     "conversion": Path(".github/ISSUE_TEMPLATE/conversion_bug.yml"),
     "proof": Path(".github/ISSUE_TEMPLATE/proof_demo_regression.yml"),
     "privacy": Path(".github/ISSUE_TEMPLATE/privacy_sensitive_report.yml"),
+    "release": Path(".github/ISSUE_TEMPLATE/release_review.yml"),
 }
 
 SECRET_PATTERNS = {
@@ -63,6 +65,7 @@ def _assert_readme_links() -> None:
             "CONTRIBUTING.md",
             "SECURITY.md",
             "Issue Intake",
+            "release-review",
             "examples\\check_synthetic_proof.py",
             "examples\\check_public_readiness.py",
             "Release Readiness",
@@ -77,6 +80,7 @@ def _assert_project_map() -> None:
         text,
         [
             ".github/ISSUE_TEMPLATE/",
+            "release-review",
             ".github/workflows/ci.yml",
             "synthetic proof check",
             "public readiness check",
@@ -130,6 +134,7 @@ def _assert_issue_templates() -> None:
     conversion = _read(ISSUE_TEMPLATES["conversion"]).lower()
     proof = _read(ISSUE_TEMPLATES["proof"]).lower()
     privacy = _read(ISSUE_TEMPLATES["privacy"]).lower()
+    release = _read(ISSUE_TEMPLATES["release"]).lower()
 
     _require_all(
         str(ISSUE_TEMPLATES["conversion"]),
@@ -175,6 +180,28 @@ def _assert_issue_templates() -> None:
             "personal data",
             "local absolute paths",
             "private reporting route",
+        ],
+    )
+    _require_all(
+        str(ISSUE_TEMPLATES["release"]),
+        release,
+        [
+            "first release review",
+            "does not create, tag, or publish a release",
+            "ruff passed",
+            "pytest passed",
+            "synthetic proof check passed",
+            "public readiness check passed",
+            "sanitized examples only",
+            "d-drive storage assumptions",
+            "pdf_forge",
+            "pdf_forge_api",
+            "pdf-forge",
+            "private pdfs",
+            "local absolute paths",
+            "secrets",
+            "outputs/public-proof",
+            "outputs/public-proof-check",
         ],
     )
 
