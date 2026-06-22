@@ -9,6 +9,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 READINESS_FILES = [
     Path("README.md"),
     Path("SECURITY.md"),
+    Path("docs/COMMIT_READINESS.md"),
     Path("docs/PROJECT_MAP.md"),
     Path("docs/PUBLIC_PROOF.md"),
     Path("docs/RELEASE_READINESS.md"),
@@ -49,6 +50,7 @@ def main() -> None:
     _assert_files_exist(READINESS_FILES)
     _assert_readme_links()
     _assert_project_map()
+    _assert_commit_readiness()
     _assert_security_policy()
     _assert_issue_templates()
     _assert_ci_wiring()
@@ -111,6 +113,30 @@ def _assert_project_map() -> None:
     _assert_release_readiness()
     _assert_release_review_outcome_template()
     _assert_release_review_dry_run_command()
+
+
+def _assert_commit_readiness() -> None:
+    text = _read("docs/COMMIT_READINESS.md")
+    _require_all(
+        "docs/COMMIT_READINESS.md",
+        text,
+        [
+            "https://github.com/Martin123132/pagewright",
+            "D:\\CodexProjects\\pdf-forge",
+            "outputs/release-review-dry-run/",
+            "local-only evidence",
+            "sanitized summaries",
+            "git diff --check",
+            "examples\\check_synthetic_proof.py",
+            "examples\\check_public_readiness.py",
+            "examples\\run_release_review_dry_run.py",
+            "Do not stage ignored runtime output",
+        ],
+    )
+    forbidden = ["no commits yet", "Before Initial Commit"]
+    found = [value for value in forbidden if value in text]
+    if found:
+        raise AssertionError(f"docs/COMMIT_READINESS.md contains stale text: {found}")
 
 
 def _assert_security_policy() -> None:
