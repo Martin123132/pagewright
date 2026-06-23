@@ -5,8 +5,9 @@ from pathlib import Path
 from zipfile import ZipFile
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
-from pdf_forge_api.main import create_app
+from pdf_forge_api.main import _output_job_dir, create_app
 from pdf_forge_api.storage import StoragePaths
 from PIL import Image
 from pypdf import PdfReader, PdfWriter
@@ -56,6 +57,8 @@ def test_index_serves_product_workbench(client: TestClient) -> None:
     assert "recoveryPanel" in response.text
     assert "recentList" in response.text
     assert "recentLimitSelect" in response.text
+    assert "cleanupList" in response.text
+    assert "cleanupRefreshButton" in response.text
     assert "/static/app.js" in response.text
 
 
@@ -121,6 +124,10 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert "pdfForgeRecentLimit" in response.text
     assert "trimRecent" in response.text
     assert "data-remove-recent" in response.text
+    assert "/outputs/jobs" in response.text
+    assert "refreshOutputCleanup" in response.text
+    assert "deleteOutputJob" in response.text
+    assert "data-delete-output" in response.text
     assert "Output name" in response.text
     assert "output_name" in response.text
 
@@ -285,6 +292,81 @@ def test_demo_job_rejects_unknown_operation(client: TestClient) -> None:
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Unknown demo operation."
+
+
+def test_output_cleanup_lists_and_deletes_job_directories(client: TestClient) -> None:
+    merge = client.post(
+        "/jobs/merge",
+        files=[
+            ("files", ("first.pdf", _pdf_bytes(pages=1), "application/pdf")),
+            ("files", ("second.pdf", _pdf_bytes(pages=1), "application/pdf")),
+        ],
+    )
+    split = client.post(
+        "/jobs/split",
+        data={"pages": "1-2"},
+        files={"file": ("source.pdf", _pdf_bytes(pages=2), "application/pdf")},
+    )
+    assert merge.status_code == 200
+    assert split.status_code == 200
+    merge_job_id = merge.json()["job_id"]
+    split_job_id = split.json()["job_id"]
+
+    listed = client.get("/outputs/jobs")
+
+    assert listed.status_code == 200
+    data = listed.json()
+    assert data["outputs_dir"].lower().startswith("d:")
+    jobs = {job["job_id"]: job for job in data["jobs"]}
+    assert {merge_job_id, split_job_id}.issubset(jobs)
+    assert jobs[merge_job_id]["file_count"] == 1
+    assert jobs[merge_job_id]["size_bytes"] > 0
+    assert jobs[split_job_id]["file_count"] == 3
+
+    deleted = client.delete(f"/outputs/jobs/{merge_job_id}")
+
+    assert deleted.status_code == 200
+    assert deleted.json() == {"job_id": merge_job_id, "deleted": True}
+    assert client.get(merge.json()["files"][0]["download_url"]).status_code == 404
+    remaining_jobs = {job["job_id"] for job in client.get("/outputs/jobs").json()["jobs"]}
+    assert merge_job_id not in remaining_jobs
+    assert split_job_id in remaining_jobs
+
+
+def test_output_cleanup_rejects_non_job_targets(client: TestClient) -> None:
+    paths: StoragePaths = client.app.state.storage_paths
+    direct_file = paths.outputs_dir / "loose.pdf"
+    direct_file.write_bytes(b"not a cleanup job")
+
+    response = client.delete("/outputs/jobs/loose.pdf")
+
+    assert response.status_code == 400
+    assert "not a job directory" in response.json()["detail"]
+    assert direct_file.exists()
+
+
+def test_output_cleanup_rejects_path_escape(client: TestClient) -> None:
+    paths: StoragePaths = client.app.state.storage_paths
+
+    with pytest.raises(HTTPException) as exc:
+        _output_job_dir(paths, "..")
+
+    assert exc.value.status_code == 400
+    assert "Invalid output job id" in exc.value.detail
+
+
+def test_output_cleanup_rejects_c_drive_outputs() -> None:
+    paths = StoragePaths(
+        repo_root=Path("D:/pagewright"),
+        scratch_dir=Path("D:/pagewright/scratch"),
+        outputs_dir=Path("C:/pagewright/outputs"),
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        _output_job_dir(paths, "job")
+
+    assert exc.value.status_code == 400
+    assert "C:" in exc.value.detail
 
 
 def test_rotate_job_rejects_invalid_degrees(client: TestClient) -> None:

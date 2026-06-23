@@ -212,6 +212,8 @@ const state = {
   dragFileIndex: null,
   files: [],
   outputNameTouched: false,
+  outputJobs: [],
+  outputJobsLoading: false,
   presets: {},
   recent: [],
   recentLimit: 5,
@@ -276,6 +278,9 @@ const dom = {
   recentList: document.querySelector("#recentList"),
   recentLimitSelect: document.querySelector("#recentLimitSelect"),
   clearRecentButton: document.querySelector("#clearRecentButton"),
+  cleanupList: document.querySelector("#cleanupList"),
+  cleanupRefreshButton: document.querySelector("#cleanupRefreshButton"),
+  cleanupSummary: document.querySelector("#cleanupSummary"),
   pathSteps: document.querySelector("#pathSteps"),
   storageStatus: document.querySelector("#storageStatus"),
 };
@@ -973,6 +978,90 @@ function removeRecentJob(recentIndex) {
   focusElement(dom.recentLimitSelect);
 }
 
+function renderOutputCleanup() {
+  dom.cleanupRefreshButton.disabled = state.outputJobsLoading;
+  if (state.outputJobsLoading) {
+    dom.cleanupSummary.textContent = "Checking ignored output folders...";
+    dom.cleanupList.innerHTML = '<div class="recent-empty">Scanning outputs</div>';
+    return;
+  }
+
+  if (state.outputJobs.length === 0) {
+    dom.cleanupSummary.textContent = "No generated output folders found.";
+    dom.cleanupList.innerHTML = '<div class="recent-empty">Outputs are tidy</div>';
+    return;
+  }
+
+  const totalSize = state.outputJobs.reduce((sum, job) => sum + job.size_bytes, 0);
+  const totalFiles = state.outputJobs.reduce((sum, job) => sum + job.file_count, 0);
+  dom.cleanupSummary.textContent = `${state.outputJobs.length} folders - ${totalFiles} files - ${formatBytes(totalSize)}`;
+  dom.cleanupList.innerHTML = state.outputJobs
+    .map(
+      (job) => `
+        <article class="cleanup-job">
+          <div class="cleanup-copy">
+            <div class="cleanup-name">${escapeHtml(job.job_id)}</div>
+            <div class="cleanup-meta">${job.file_count} file${job.file_count === 1 ? "" : "s"} - ${formatBytes(job.size_bytes)}</div>
+          </div>
+          <button class="cleanup-delete" type="button" data-delete-output="${escapeHtml(job.job_id)}" aria-label="Delete output folder ${escapeHtml(job.job_id)}">
+            ${icon("close")}
+            <span>Delete</span>
+          </button>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+async function refreshOutputCleanup() {
+  state.outputJobsLoading = true;
+  renderOutputCleanup();
+  try {
+    const response = await fetch("/outputs/jobs");
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.detail || "Could not list output folders.");
+    }
+    state.outputJobs = payload.jobs || [];
+    renderOutputCleanup();
+  } catch (error) {
+    state.outputJobs = [];
+    renderOutputCleanup();
+    renderMessage(error.message || "Could not list output folders.", "error");
+  } finally {
+    state.outputJobsLoading = false;
+    renderOutputCleanup();
+  }
+}
+
+async function deleteOutputJob(jobId) {
+  if (!jobId || state.outputJobsLoading) return;
+  state.outputJobsLoading = true;
+  renderOutputCleanup();
+  try {
+    const response = await fetch(`/outputs/jobs/${encodeURIComponent(jobId)}`, { method: "DELETE" });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.detail || "Could not delete output folder.");
+    }
+    removeRecentJobById(jobId);
+    await refreshOutputCleanup();
+    renderMessage(`Deleted output folder ${jobId}.`, "success");
+    focusElement(dom.cleanupRefreshButton);
+  } catch (error) {
+    renderMessage(error.message || "Could not delete output folder.", "error");
+    await refreshOutputCleanup();
+  }
+}
+
+function removeRecentJobById(jobId) {
+  const nextRecent = state.recent.filter((job) => job.jobId !== jobId);
+  if (nextRecent.length === state.recent.length) return;
+  state.recent = nextRecent;
+  saveRecent();
+  renderRecent();
+}
+
 function renderMessage(text = "", tone = "") {
   const operation = currentOperation();
   dom.jobMessage.dataset.tone = tone;
@@ -1383,6 +1472,7 @@ async function runJob() {
     state.results = payload.files || [];
     completeReceipt(payload);
     rememberJob(payload);
+    await refreshOutputCleanup();
     renderResults();
     renderRecent();
     renderRouteIntel();
@@ -1437,6 +1527,7 @@ async function runDemoJob() {
       settingsLabel: operation.fields.length === 0 ? "No extra settings" : "Sample defaults",
     };
     rememberJob(payload);
+    await refreshOutputCleanup();
     renderResults();
     renderRecent();
     renderRouteIntel();
@@ -1760,6 +1851,13 @@ dom.clearRecentButton.addEventListener("click", () => {
   focusElement(dom.recentLimitSelect);
 });
 
+dom.cleanupRefreshButton.addEventListener("click", refreshOutputCleanup);
+dom.cleanupList.addEventListener("click", (event) => {
+  const deleteButton = event.target.closest("[data-delete-output]");
+  if (!deleteButton) return;
+  deleteOutputJob(deleteButton.dataset.deleteOutput);
+});
+
 dom.recentLimitSelect.addEventListener("change", () => {
   state.recentLimit = Number(dom.recentLimitSelect.value);
   state.recent = trimRecent();
@@ -1797,4 +1895,6 @@ dom.dropZone.addEventListener("drop", (event) => {
 loadRecent();
 loadPresets();
 renderOperation();
+renderOutputCleanup();
 hydrateStatus();
+refreshOutputCleanup();

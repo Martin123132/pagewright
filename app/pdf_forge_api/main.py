@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import shutil
 from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 from urllib.parse import quote
@@ -19,7 +21,15 @@ from pdf_forge.operations import (
 )
 
 from pdf_forge_api.demo import create_demo_image, create_demo_pdf
-from pdf_forge_api.models import HealthResponse, JobResult, OutputBundle, OutputFile
+from pdf_forge_api.models import (
+    HealthResponse,
+    JobResult,
+    OutputBundle,
+    OutputCleanupResult,
+    OutputFile,
+    OutputJobList,
+    OutputJobSummary,
+)
 from pdf_forge_api.storage import (
     StorageError,
     StoragePaths,
@@ -27,7 +37,6 @@ from pdf_forge_api.storage import (
     job_output_dir,
     job_upload_dir,
     new_job_id,
-    output_file_path,
     sanitize_filename,
     save_upload,
 )
@@ -180,10 +189,33 @@ def create_app(paths: StoragePaths | None = None) -> FastAPI:
         job_id, upload_dir, output_dir = _prepare_job(storage_paths)
         return _run_demo_job(operation, job_id, upload_dir, output_dir, storage_paths)
 
+    @app.get("/outputs/jobs", response_model=OutputJobList)
+    def list_output_jobs(request: Request) -> OutputJobList:
+        paths: StoragePaths = request.app.state.storage_paths
+        return OutputJobList(
+            outputs_dir=str(paths.outputs_dir),
+            jobs=_list_output_jobs(paths),
+        )
+
+    @app.delete("/outputs/jobs/{job_id}", response_model=OutputCleanupResult)
+    def delete_output_job(request: Request, job_id: str) -> OutputCleanupResult:
+        paths: StoragePaths = request.app.state.storage_paths
+        target_dir = _output_job_dir(paths, job_id)
+        shutil.rmtree(target_dir)
+        return OutputCleanupResult(job_id=job_id, deleted=True)
+
     @app.get("/outputs/{job_id}/{file_name}")
     def download_output(request: Request, job_id: str, file_name: str) -> FileResponse:
         paths: StoragePaths = request.app.state.storage_paths
-        target_path = output_file_path(paths, job_id, file_name)
+        try:
+            output_dir = _output_job_dir(paths, job_id)
+        except HTTPException as exc:
+            if exc.status_code == 404:
+                raise HTTPException(status_code=404, detail="Output file not found.") from exc
+            raise
+        target_path = (output_dir / sanitize_filename(file_name)).resolve()
+        if target_path.parent != output_dir:
+            raise HTTPException(status_code=404, detail="Output file not found.")
         if not target_path.exists() or not target_path.is_file():
             raise HTTPException(status_code=404, detail="Output file not found.")
         media_type = "application/zip" if target_path.suffix == ".zip" else None
@@ -257,6 +289,54 @@ def _run_demo_job(
 def _prepare_job(paths: StoragePaths) -> tuple[str, Path, Path]:
     job_id = new_job_id()
     return job_id, job_upload_dir(paths, job_id), job_output_dir(paths, job_id)
+
+
+def _list_output_jobs(paths: StoragePaths) -> list[OutputJobSummary]:
+    outputs_dir = paths.outputs_dir.resolve()
+    jobs: list[OutputJobSummary] = []
+    for child in outputs_dir.iterdir():
+        if child.name.startswith(".") or not child.is_dir() or child.is_symlink():
+            continue
+        jobs.append(_output_job_summary(outputs_dir, child))
+    return sorted(jobs, key=lambda job: job.modified_at, reverse=True)
+
+
+def _output_job_summary(outputs_dir: Path, job_dir: Path) -> OutputJobSummary:
+    file_count = 0
+    size_bytes = 0
+    modified_at = job_dir.stat().st_mtime
+    for path in job_dir.rglob("*"):
+        if path.is_symlink() or not path.is_file():
+            continue
+        stat = path.stat()
+        file_count += 1
+        size_bytes += stat.st_size
+        modified_at = max(modified_at, stat.st_mtime)
+    relative_job = job_dir.relative_to(outputs_dir).as_posix()
+    return OutputJobSummary(
+        job_id=relative_job,
+        file_count=file_count,
+        size_bytes=size_bytes,
+        modified_at=datetime.fromtimestamp(modified_at, UTC).isoformat(),
+    )
+
+
+def _output_job_dir(paths: StoragePaths, job_id: str) -> Path:
+    if not job_id or job_id in {".", ".."} or Path(job_id).name != job_id:
+        raise HTTPException(status_code=400, detail="Invalid output job id.")
+
+    outputs_dir = paths.outputs_dir.resolve()
+    if outputs_dir.drive.lower() == "c:":
+        raise HTTPException(status_code=400, detail="Refusing to clean outputs from C:.")
+
+    target_dir = (outputs_dir / job_id).resolve()
+    if target_dir == outputs_dir or target_dir.parent != outputs_dir:
+        raise HTTPException(status_code=400, detail="Output cleanup target escaped storage root.")
+    if not target_dir.exists():
+        raise HTTPException(status_code=404, detail="Output job not found.")
+    if target_dir.is_symlink() or not target_dir.is_dir():
+        raise HTTPException(status_code=400, detail="Output cleanup target is not a job directory.")
+    return target_dir
 
 
 def _output_stem(output_name: str | None, fallback: str) -> str:

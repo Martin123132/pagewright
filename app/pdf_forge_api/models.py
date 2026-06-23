@@ -26,3 +26,20 @@ class HealthResponse(BaseModel):
     scratch_dir: str
     outputs_dir: str
     operations: list[str]
+
+
+class OutputJobSummary(BaseModel):
+    job_id: str
+    file_count: int = Field(ge=0)
+    size_bytes: int = Field(ge=0)
+    modified_at: str
+
+
+class OutputJobList(BaseModel):
+    outputs_dir: str
+    jobs: list[OutputJobSummary]
+
+
+class OutputCleanupResult(BaseModel):
+    job_id: str
+    deleted: bool

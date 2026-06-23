@@ -1802,7 +1802,8 @@ button:focus-visible {
   color: var(--panel);
 }
 
-.recent-card {
+.recent-card,
+.cleanup-card {
   position: relative;
   z-index: 2;
   margin-top: 14px;
@@ -1848,7 +1849,8 @@ button:focus-visible {
   color: var(--ink);
 }
 
-.recent-list {
+.recent-list,
+.cleanup-list {
   display: grid;
   gap: 10px;
 }
@@ -1872,6 +1874,73 @@ button:focus-visible {
   border: 1px solid var(--rail-line);
   border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.04);
+}
+
+.cleanup-summary {
+  margin: 12px 0;
+  color: rgba(255, 254, 251, 0.62);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.cleanup-job {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--rail-line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.cleanup-copy {
+  min-width: 0;
+}
+
+.cleanup-name {
+  overflow: hidden;
+  color: var(--panel);
+  font-size: 13px;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cleanup-meta {
+  margin-top: 2px;
+  color: rgba(255, 254, 251, 0.55);
+  font-size: 12px;
+  font-weight: 660;
+}
+
+.cleanup-delete {
+  min-width: 78px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid rgba(184, 50, 50, 0.44);
+  border-radius: var(--radius-sm);
+  background: rgba(184, 50, 50, 0.1);
+  color: rgba(255, 254, 251, 0.82);
+}
+
+.cleanup-delete:hover {
+  color: var(--panel);
+  background: rgba(184, 50, 50, 0.22);
+}
+
+.cleanup-delete svg {
+  width: 16px;
+  height: 16px;
+}
+
+.cleanup-delete span {
+  font-size: 11px;
+  font-weight: 780;
 }
 
 .recent-load {
