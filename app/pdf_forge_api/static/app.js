@@ -1128,6 +1128,11 @@ function renderMission() {
   dom.missionDetail.textContent = mission.detail;
   dom.missionProgress.style.width = `${mission.progress}%`;
   dom.missionActionButton.dataset.action = mission.action;
+  if (mission.routeKey) {
+    dom.missionActionButton.dataset.route = mission.routeKey;
+  } else {
+    dom.missionActionButton.removeAttribute("data-route");
+  }
   dom.missionActionButton.disabled = mission.disabled;
   dom.missionActionButton.innerHTML = `${icon(mission.icon)}${mission.actionLabel}`;
 }
@@ -1166,6 +1171,27 @@ function getMissionState() {
       progress: 100,
       state: "complete",
       title: "Ready to download",
+    };
+  }
+
+  if (
+    state.recovery &&
+    state.recovery.title === "Wrong file type" &&
+    state.recovery.suggestedOperation &&
+    operations[state.recovery.suggestedOperation]
+  ) {
+    const suggested = operations[state.recovery.suggestedOperation];
+    return {
+      action: "switch-route",
+      actionLabel: `Switch to ${suggested.routeLabel}`,
+      detail: state.recovery.detail,
+      disabled: false,
+      icon: suggested.icon,
+      label: "Recovery",
+      progress,
+      state: "staging",
+      title: state.recovery.title,
+      routeKey: state.recovery.suggestedOperation,
     };
   }
 
@@ -1343,11 +1369,43 @@ function runComparedSample(key) {
   runDemoJob();
 }
 
+function imageExtensions() {
+  return [".png", ".jpg", ".jpeg", ".webp"];
+}
+
+function isImageFile(file) {
+  return imageExtensions().includes(fileExtension(file.name));
+}
+
+function recoveryRouteForFiles(files) {
+  const acceptedFileNames = files.filter(Boolean);
+  if (acceptedFileNames.length === 0) return null;
+  const hasPdf = acceptedFileNames.some((file) => fileExtension(file.name) === ".pdf");
+  const hasImage = acceptedFileNames.some((file) => isImageFile(file));
+  if (hasImage) return "images-to-pdf";
+  if (hasPdf) return acceptedFileNames.length > 1 ? "merge" : "split";
+  return null;
+}
+
+function buildWrongTypeRecovery(rejectedFiles, operation) {
+  if (rejectedFiles.length === 0) return null;
+  const suggestedOperation = recoveryRouteForFiles(rejectedFiles);
+  const routeCopy = suggestedOperation
+    ? ` Try ${operations[suggestedOperation]?.routeLabel || "a supported"} route instead.`
+    : "";
+  return {
+    detail: `Use files that match ${operation.accept.replaceAll(",", ", ")}.${routeCopy}`,
+    suggestedOperation,
+  };
+}
+
 function addFiles(fileList) {
   const operation = currentOperation();
   const nextFiles = Array.from(fileList || []);
   const acceptedFiles = nextFiles.filter((file) => isAcceptedFile(file, operation));
   const rejectedCount = nextFiles.length - acceptedFiles.length;
+  const rejectedFiles = nextFiles.filter((file) => !isAcceptedFile(file, operation));
+  const wrongTypeRecovery = buildWrongTypeRecovery(rejectedFiles, operation);
   if (operation.multiple) {
     state.files = [...state.files, ...acceptedFiles];
     state.fileDetails = [...state.fileDetails, ...acceptedFiles.map(createFileDetail)];
@@ -1360,7 +1418,8 @@ function addFiles(fileList) {
   state.recovery =
     rejectedCount > 0
       ? {
-          detail: `${rejectedCount} file${rejectedCount === 1 ? "" : "s"} did not match ${operation.requirement}. Use ${operation.accept.replaceAll(",", ", ")}.`,
+          detail: `${rejectedCount} file${rejectedCount === 1 ? "" : "s"} did not match ${operation.requirement}. ${wrongTypeRecovery?.detail || ""}`,
+          suggestedOperation: wrongTypeRecovery?.suggestedOperation,
           title: "Wrong file type",
         }
       : null;
@@ -1857,6 +1916,16 @@ dom.missionActionButton.addEventListener("click", () => {
 
   if (action === "outputs") {
     document.querySelector(".results-panel").scrollIntoView({ block: "start", behavior: "smooth" });
+    return;
+  }
+
+  if (action === "switch-route") {
+    const route = dom.missionActionButton.dataset.route;
+    if (route) {
+      setOperation(route);
+      renderMessage(`Switched to ${operations[route]?.title || "selected"} route.`);
+      focusStageStart();
+    }
   }
 });
 dom.fileInput.addEventListener("change", (event) => addFiles(event.target.files));
