@@ -51,6 +51,19 @@ Run the CLI:
 .\.venv\Scripts\pdf-forge.exe --help
 ```
 
+## Try Pagewright in 60 Seconds
+
+Use the built-in synthetic samples, no private documents required:
+
+```powershell
+cd D:\CodexProjects\pdf-forge
+$env:TEMP='D:\CodexProjects\pdf-forge\scratch\tmp'
+$env:TMP='D:\CodexProjects\pdf-forge\scratch\tmp'
+.\.venv\Scripts\python.exe -m uvicorn pdf_forge_api.main:app --host 127.0.0.1 --port 8787
+```
+
+Open `http://127.0.0.1:8787/`, choose any route, click **Stage sample**, then **Build**. Outputs land in ignored folders under `D:\CodexProjects\pdf-forge\outputs`. Staged PDFs show a local page-count hint when the browser can read the generated sample or selected file.
+
 Run tests:
 
 ```powershell

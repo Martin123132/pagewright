@@ -210,6 +210,7 @@ const state = {
   compareIntent: "all",
   compareOpen: false,
   dragFileIndex: null,
+  fileDetails: [],
   files: [],
   outputNameTouched: false,
   outputJobs: [],
@@ -516,7 +517,7 @@ function renderFiles() {
             <div class="file-order">${position}</div>
             <div class="file-meta">
               <div class="file-name">${escapeHtml(file.name)}</div>
-              <div class="file-size">${formatBytes(file.size)} - ${fileExtension(file.name).toUpperCase()}</div>
+              <div class="file-size">${formatFileMeta(file, index)}</div>
               ${reorderable ? '<div class="file-drag-hint">Drag to reorder</div>' : ""}
             </div>
             <div class="file-actions">
@@ -898,6 +899,7 @@ function repeatReceiptSetup() {
   const receipt = state.lastReceipt;
   state.operationKey = receipt.operationKey;
   state.bundle = null;
+  state.fileDetails = [];
   state.files = [];
   state.recovery = null;
   state.results = [];
@@ -1045,6 +1047,7 @@ async function deleteOutputJob(jobId) {
       throw new Error(payload.detail || "Could not delete output folder.");
     }
     removeRecentJobById(jobId);
+    clearDeletedOutputReferences(jobId);
     await refreshOutputCleanup();
     renderMessage(`Deleted output folder ${jobId}.`, "success");
     focusElement(dom.cleanupRefreshButton);
@@ -1052,6 +1055,20 @@ async function deleteOutputJob(jobId) {
     renderMessage(error.message || "Could not delete output folder.", "error");
     await refreshOutputCleanup();
   }
+}
+
+function clearDeletedOutputReferences(jobId) {
+  if (!currentOutputsBelongToJob(jobId)) return;
+  state.bundle = null;
+  state.lastReceipt = null;
+  state.results = [];
+  renderResults();
+  renderRouteIntel();
+}
+
+function currentOutputsBelongToJob(jobId) {
+  const marker = `/outputs/${jobId}/`;
+  return [state.bundle, ...state.results].some((output) => output?.download_url?.includes(marker));
 }
 
 function removeRecentJobById(jobId) {
@@ -1204,6 +1221,7 @@ function getActiveStepIndex() {
 function resetWorkbench(message = "") {
   pendingReceipt = null;
   state.bundle = null;
+  state.fileDetails = [];
   state.files = [];
   state.lastReceipt = null;
   state.outputNameTouched = false;
@@ -1301,6 +1319,7 @@ function setOperation(key) {
   state.lastReceipt = null;
   state.operationKey = key;
   state.bundle = null;
+  state.fileDetails = [];
   state.files = [];
   state.outputNameTouched = false;
   state.recovery = null;
@@ -1331,8 +1350,10 @@ function addFiles(fileList) {
   const rejectedCount = nextFiles.length - acceptedFiles.length;
   if (operation.multiple) {
     state.files = [...state.files, ...acceptedFiles];
+    state.fileDetails = [...state.fileDetails, ...acceptedFiles.map(createFileDetail)];
   } else {
     state.files = acceptedFiles.slice(0, 1);
+    state.fileDetails = state.files.map(createFileDetail);
   }
   state.bundle = null;
   state.lastReceipt = null;
@@ -1353,6 +1374,7 @@ function addFiles(fileList) {
       : `${state.files.length} staged.`,
     rejectedCount > 0 ? "error" : "",
   );
+  inspectStagedFiles();
   focusNextStep();
 }
 
@@ -1363,9 +1385,13 @@ function moveStagedFile(index, direction) {
 function reorderStagedFile(index, targetIndex) {
   if (targetIndex < 0 || targetIndex >= state.files.length || index === targetIndex) return;
   const nextFiles = [...state.files];
+  const nextDetails = [...state.fileDetails];
   const [file] = nextFiles.splice(index, 1);
+  const [detail] = nextDetails.splice(index, 1);
   nextFiles.splice(targetIndex, 0, file);
+  nextDetails.splice(targetIndex, 0, detail || createFileDetail(file));
   state.files = nextFiles;
+  state.fileDetails = nextDetails;
   clearStagedOutputState();
   renderFiles();
   renderResults();
@@ -1496,6 +1522,7 @@ async function runDemoJob() {
   const operation = currentOperation();
   state.running = true;
   state.bundle = null;
+  state.fileDetails = [];
   state.files = [];
   state.lastReceipt = null;
   state.recovery = null;
@@ -1547,16 +1574,19 @@ function stageSampleFiles() {
   state.recovery = null;
   state.results = [];
   state.files = sampleFilesForOperation(state.operationKey);
+  state.fileDetails = state.files.map(createFileDetail);
   dom.fileInput.value = "";
   renderFiles();
   renderResults();
   renderRouteIntel();
   renderMessage(`${state.files.length} sample file${state.files.length === 1 ? "" : "s"} staged.`);
+  inspectStagedFiles();
   focusNextStep();
 }
 
 function clearStage() {
   state.bundle = null;
+  state.fileDetails = [];
   state.files = [];
   state.lastReceipt = null;
   state.outputNameTouched = false;
@@ -1626,6 +1656,56 @@ function formatBytes(bytes) {
 function fileExtension(fileName) {
   const match = fileName.toLowerCase().match(/\.[^.]+$/);
   return match ? match[0] : "";
+}
+
+function createFileDetail(file) {
+  return {
+    pageCount: null,
+    status: fileExtension(file.name) === ".pdf" ? "pending" : "unavailable",
+  };
+}
+
+function formatFileMeta(file, index) {
+  const extension = fileExtension(file.name).toUpperCase() || "FILE";
+  const parts = [formatBytes(file.size), extension];
+  if (fileExtension(file.name) === ".pdf") {
+    const detail = state.fileDetails[index] || createFileDetail(file);
+    if (detail.status === "ready" && detail.pageCount > 0) {
+      parts.push(`${detail.pageCount} page${detail.pageCount === 1 ? "" : "s"} detected`);
+    } else if (detail.status === "pending") {
+      parts.push("page count pending");
+    } else {
+      parts.push("page count unavailable");
+    }
+  }
+  return escapeHtml(parts.join(" - "));
+}
+
+async function inspectStagedFiles() {
+  const inspectionTargets = state.files
+    .map((file, index) => ({ file, index }))
+    .filter(({ file, index }) => fileExtension(file.name) === ".pdf" && state.fileDetails[index]?.status === "pending");
+
+  for (const { file, index } of inspectionTargets) {
+    try {
+      const pageCount = await countPdfPages(file);
+      if (state.files[index] !== file) continue;
+      state.fileDetails[index] = {
+        pageCount,
+        status: pageCount > 0 ? "ready" : "unavailable",
+      };
+    } catch {
+      if (state.files[index] !== file) continue;
+      state.fileDetails[index] = { pageCount: null, status: "unavailable" };
+    }
+    renderFiles();
+  }
+}
+
+async function countPdfPages(file) {
+  const content = new TextDecoder("latin1").decode(await file.arrayBuffer());
+  const matches = content.match(/\/Type\s*\/Page\b/g);
+  return matches ? matches.length : 0;
 }
 
 function isAcceptedFile(file, operation) {
@@ -1794,7 +1874,9 @@ dom.fileList.addEventListener("click", (event) => {
 
   const button = event.target.closest("[data-remove-file]");
   if (!button) return;
-  state.files.splice(Number(button.dataset.removeFile), 1);
+  const removeIndex = Number(button.dataset.removeFile);
+  state.files.splice(removeIndex, 1);
+  state.fileDetails.splice(removeIndex, 1);
   state.bundle = null;
   state.lastReceipt = null;
   state.recovery = null;
@@ -1833,6 +1915,7 @@ dom.recentList.addEventListener("click", (event) => {
   if (!job) return;
   state.operationKey = job.operation;
   state.bundle = job.bundle || null;
+  state.fileDetails = [];
   state.files = [];
   state.lastReceipt = null;
   state.recovery = null;

@@ -38,6 +38,8 @@ def test_index_serves_product_workbench(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert "Pagewright" in response.text
+    assert "/static/app.js?v=20260623a" in response.text
+    assert "/static/styles.css?v=20260623a" in response.text
     assert "Try sample" in response.text
     assert "Stage sample" in response.text
     assert "routeBoard" in response.text
@@ -94,6 +96,10 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert "data-new-job" in response.text
     assert "data-move-file" in response.text
     assert "stageSampleFiles" in response.text
+    assert "formatFileMeta" in response.text
+    assert "inspectStagedFiles" in response.text
+    assert "page count pending" in response.text
+    assert "detected" in response.text
     assert "handleGlobalKeydown" in response.text
     assert "canRunJob" in response.text
     assert "focusNextStep" in response.text
@@ -127,6 +133,7 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert "/outputs/jobs" in response.text
     assert "refreshOutputCleanup" in response.text
     assert "deleteOutputJob" in response.text
+    assert "clearDeletedOutputReferences" in response.text
     assert "data-delete-output" in response.text
     assert "Output name" in response.text
     assert "output_name" in response.text
