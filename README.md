@@ -64,6 +64,8 @@ $env:TMP='D:\CodexProjects\pdf-forge\scratch\tmp'
 
 Open `http://127.0.0.1:8787/`, choose any route, click **Stage sample**, then **Build**. Outputs land in ignored folders under `D:\CodexProjects\pdf-forge\outputs`. Staged PDFs show a local page-count hint when the browser can read the generated sample or selected file.
 
+If you drop an unsupported file type, the Mission strip now offers a **guided recovery action** (for example, jump to Images or Extract/Combine routes), so you can recover quickly instead of getting stuck.
+
 Run tests:
 
 ```powershell
