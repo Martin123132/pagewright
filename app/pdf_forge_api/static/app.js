@@ -274,6 +274,7 @@ const dom = {
   recoveryDetail: document.querySelector("#recoveryDetail"),
   recoverySampleButton: document.querySelector("#recoverySampleButton"),
   recoveryClearButton: document.querySelector("#recoveryClearButton"),
+  recoverySwitchButton: document.querySelector("#recoverySwitchButton"),
   resultsList: document.querySelector("#resultsList"),
   resultCount: document.querySelector("#resultCount"),
   recentList: document.querySelector("#recentList"),
@@ -1093,12 +1094,30 @@ function renderMessage(text = "", tone = "") {
 function renderRecovery() {
   if (!state.recovery) {
     dom.recoveryPanel.hidden = true;
+    dom.recoverySwitchButton.hidden = true;
+    dom.recoverySwitchButton.removeAttribute("data-route");
     return;
   }
 
   dom.recoveryPanel.hidden = false;
   dom.recoveryTitle.textContent = state.recovery.title;
   dom.recoveryDetail.textContent = state.recovery.detail;
+  const suggestedOperation =
+    state.recovery.suggestedOperation && operations[state.recovery.suggestedOperation]
+      ? state.recovery.suggestedOperation
+      : null;
+  const shouldShowRecoverySwitch = Boolean(suggestedOperation);
+  if (shouldShowRecoverySwitch) {
+    const suggested = operations[suggestedOperation];
+    dom.recoverySwitchButton.textContent = `Switch to ${suggested.routeLabel} route`;
+    dom.recoverySwitchButton.dataset.route = suggestedOperation;
+    dom.recoverySwitchButton.hidden = false;
+    dom.recoverySampleButton.textContent = "Stage sample for this route";
+  } else {
+    dom.recoverySwitchButton.hidden = true;
+    dom.recoverySwitchButton.removeAttribute("data-route");
+    dom.recoverySampleButton.textContent = "Stage sample";
+  }
 }
 
 function renderPath() {
@@ -1899,6 +1918,18 @@ dom.routeIntelPrimaryButton.addEventListener("click", () => {
 });
 dom.routeIntelSecondaryButton.addEventListener("click", runDemoJob);
 dom.recoverySampleButton.addEventListener("click", stageSampleFiles);
+dom.recoverySwitchButton.addEventListener("click", () => {
+  const route = dom.recoverySwitchButton.dataset.route;
+  if (route) {
+    clearStage();
+    setOperation(route);
+    renderMessage(`Recovered to ${operations[route]?.title || "selected"} route.`);
+    return;
+  }
+
+  renderMessage("No recovery route available.", "error");
+  focusStageStart();
+});
 dom.recoveryClearButton.addEventListener("click", clearStage);
 dom.presetApplyButton.addEventListener("click", applyRoutePreset);
 dom.presetSaveButton.addEventListener("click", saveRoutePreset);
