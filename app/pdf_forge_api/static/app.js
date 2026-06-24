@@ -294,6 +294,10 @@ const dom = {
   missionDetail: document.querySelector("#missionDetail"),
   missionProgress: document.querySelector("#missionProgress"),
   missionActionButton: document.querySelector("#missionActionButton"),
+  missionControl: document.querySelector("#missionControl"),
+  missionControlTitle: document.querySelector("#missionControlTitle"),
+  missionControlScore: document.querySelector("#missionControlScore"),
+  missionChecks: document.querySelector("#missionChecks"),
   clearButton: document.querySelector("#clearButton"),
   dropZone: document.querySelector("#dropZone"),
   fileList: document.querySelector("#fileList"),
@@ -346,6 +350,8 @@ function icon(name) {
     down: '<path d="m7 13 5 5 5-5"/><path d="M12 6v12"/>',
     download: '<path d="M12 4v10"/><path d="m8.5 10.5 3.5 3.5 3.5-3.5"/><path d="M5.5 18.5h13"/>',
     spark: '<path d="m12 3 1.2 4 3.8 1.2-3.8 1.2L12 13l-1.2-3.6L7 8.2 10.8 7z"/><path d="m17.5 13 .8 2.5 2.2.8-2.2.8-.8 2.4-.8-2.4-2.2-.8 2.2-.8z"/><path d="m6.5 14 .6 1.8 1.6.6-1.6.6-.6 1.7-.6-1.7-1.6-.6 1.6-.6z"/>',
+    check: '<path d="m5 12.5 4 4L19 6.5"/>',
+    alert: '<path d="M12 8v5"/><path d="M12 17h.1"/><path d="M10.3 4.9h3.4L21 18H3z"/>',
   };
   return `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[name] ?? icons.file}</svg>`;
 }
@@ -753,6 +759,7 @@ function handleSettingsChange(event) {
   }
   renderPresetPanel();
   renderJobPreview();
+  renderMission();
 }
 
 function getPreviewOutput(operation) {
@@ -1529,6 +1536,32 @@ function handlePathQuickAction(action, routeKey = null) {
   }
 }
 
+function handleMissionControlAction(action) {
+  if (["stage-sample", "browse", "forge", "outputs", "compare-routes"].includes(action)) {
+    handlePathQuickAction(action);
+    return;
+  }
+
+  if (action === "settings") {
+    const target =
+      currentOperation()
+        .fields.map((field) => dom.settingsForm.elements[field.id])
+        .find(Boolean) || dom.runButton;
+    focusPathTarget(null, target ? `#${target.id || target.name}` : "#runButton", "#runButton");
+    return;
+  }
+
+  if (action === "output-name") {
+    const outputName = dom.settingsForm.elements.output_name;
+    if (outputName) {
+      outputName.scrollIntoView({ block: "center", behavior: "smooth" });
+      focusElement(outputName);
+      return;
+    }
+    focusPathTarget("#runButton");
+  }
+}
+
 function focusPathTarget(primarySelector, ...fallbackSelectors) {
   const primary = primarySelector ? document.querySelector(primarySelector) : null;
   const fallback = fallbackSelectors.find((selector) => document.querySelector(selector));
@@ -1555,6 +1588,112 @@ function renderMission() {
   }
   dom.missionActionButton.disabled = mission.disabled;
   dom.missionActionButton.innerHTML = `${icon(mission.icon)}${mission.actionLabel}`;
+  renderMissionControl(mission);
+}
+
+function renderMissionControl(mission = getMissionState()) {
+  const items = getMissionControlItems();
+  const readyCount = items.filter((item) => item.status === "ready").length;
+  dom.missionControl.dataset.state = mission.state;
+  dom.missionControlTitle.textContent = mission.title;
+  dom.missionControlScore.textContent = `${readyCount}/${items.length}`;
+  dom.missionChecks.innerHTML = items
+    .map((item) => {
+      const actionAttribute = item.action ? ` data-check-action="${item.action}"` : "";
+      const disabledAttribute = item.action ? "" : " disabled";
+      return `
+        <button
+          class="mission-check"
+          type="button"
+          data-status="${item.status}"
+          ${actionAttribute}
+          ${disabledAttribute}
+          aria-label="${escapeHtml(item.label)}: ${escapeHtml(item.detail)}"
+        >
+          <span class="mission-check-icon">${icon(item.icon)}</span>
+          <span class="mission-check-copy">
+            <span class="mission-check-label">${escapeHtml(item.label)}</span>
+            <span class="mission-check-detail">${escapeHtml(item.detail)}</span>
+          </span>
+          <span class="mission-check-state">${escapeHtml(item.stateLabel)}</span>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function getMissionControlItems() {
+  const operation = currentOperation();
+  const settingIssues = getSettingIssues(operation);
+  const hasEnoughFiles = state.files.length >= operation.minFiles;
+  const hasOutputs = state.results.length > 0;
+  const canBuild = !hasOutputs && canRunJob() && settingIssues.length === 0;
+  const fileDetail =
+    state.files.length === 0
+      ? `Need ${operation.requirement}`
+      : `${state.files.length}/${operation.minFiles} staged`;
+
+  return [
+    {
+      action: "compare-routes",
+      detail: operation.title,
+      icon: operation.icon,
+      label: "Route",
+      stateLabel: operation.routeLabel,
+      status: "ready",
+    },
+    {
+      action: hasEnoughFiles ? "browse" : "stage-sample",
+      detail: state.recovery?.title === "Wrong file type" ? "Recovery available" : fileDetail,
+      icon: state.recovery ? "alert" : "file",
+      label: "Files",
+      stateLabel: hasEnoughFiles ? "Ready" : "Stage",
+      status: state.recovery ? "warn" : hasEnoughFiles ? "ready" : "active",
+    },
+    {
+      action: "settings",
+      detail: settingIssues[0] || getSettingsSummary(operation),
+      icon: settingIssues.length > 0 ? "alert" : "spark",
+      label: "Settings",
+      stateLabel: settingIssues.length > 0 ? "Fix" : "Ready",
+      status: settingIssues.length > 0 ? "warn" : "ready",
+    },
+    {
+      action: hasOutputs ? "outputs" : "output-name",
+      detail: hasOutputs ? `${state.results.length} ready` : getPreviewOutput(operation),
+      icon: hasOutputs ? "download" : "bundle",
+      label: "Output",
+      stateLabel: hasOutputs ? "Claim" : "Planned",
+      status: hasOutputs ? "ready" : hasEnoughFiles ? "active" : "waiting",
+    },
+    {
+      action: canBuild ? "forge" : null,
+      detail: state.running ? "Engine running" : canBuild ? "Ready to build" : "Waiting",
+      icon: hasOutputs ? "check" : "spark",
+      label: "Build",
+      stateLabel: hasOutputs ? "Done" : state.running ? "Run" : canBuild ? "Go" : "Wait",
+      status: hasOutputs ? "ready" : state.running ? "active" : canBuild ? "active" : "waiting",
+    },
+  ];
+}
+
+function getSettingIssues(operation = currentOperation()) {
+  return operation.fields
+    .map((field) => {
+      const element = dom.settingsForm.elements[field.id];
+      const value = element?.value ?? field.value ?? "";
+      if (field.type === "number") {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed)) return `${field.label} needs a number`;
+        if (field.min !== undefined && parsed < field.min) return `${field.label} is below ${field.min}`;
+        if (field.max !== undefined && parsed > field.max) return `${field.label} is above ${field.max}`;
+      }
+      if (field.type === "select" && field.options && !field.options.includes(value)) {
+        return `${field.label} needs a valid choice`;
+      }
+      return "";
+    })
+    .filter(Boolean);
 }
 
 function getMissionState() {
@@ -2393,6 +2532,11 @@ dom.missionActionButton.addEventListener("click", () => {
       focusStageStart();
     }
   }
+});
+dom.missionChecks.addEventListener("click", (event) => {
+  const checkButton = event.target.closest("[data-check-action]");
+  if (!checkButton) return;
+  handleMissionControlAction(checkButton.dataset.checkAction);
 });
 dom.fileInput.addEventListener("change", (event) => addFiles(event.target.files));
 dom.settingsForm.addEventListener("input", handleSettingsChange);

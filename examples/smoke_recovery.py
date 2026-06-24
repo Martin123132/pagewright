@@ -87,6 +87,21 @@ def _build_sample_wrong_route_script(port: int) -> str:
             const appUrl = 'http://127.0.0.1:__PORT__/';
             await page.goto(appUrl, { waitUntil: 'networkidle' });
             await page.waitForSelector('#pathWelcome:not([hidden])');
+            await page.waitForSelector('#missionControl');
+            const missionCheckCount = await page.$$eval(
+              '#missionChecks .mission-check',
+              (checks) => checks.length,
+            );
+            if (missionCheckCount !== 5) {
+              throw new Error(`Expected 5 mission checks, found ${missionCheckCount}`);
+            }
+            const initialScore = await page.$eval(
+              '#missionControlScore',
+              (node) => node.textContent?.trim(),
+            );
+            if (!/^\\d\\/5$/.test(initialScore || '')) {
+              throw new Error(`Unexpected mission score: ${initialScore}`);
+            }
             const quickActionCount = await page.$$eval(
               '#pathQuickActions button',
               (buttons) => buttons.length,
@@ -108,10 +123,18 @@ def _build_sample_wrong_route_script(port: int) -> str:
               throw new Error(`Path welcome dismissal was not persisted: ${storedDismissal}`);
             }
 
-            await page.click('#pathQuickActions [data-path-action="stage-sample"]');
+            await page.click('#missionChecks [data-check-action="stage-sample"]');
             await page.waitForFunction(
               () => document.querySelectorAll('#fileList .file-row').length >= 2,
             );
+            await page.waitForSelector('#missionChecks [data-check-action="forge"]');
+            const stagedScore = await page.$eval(
+              '#missionControlScore',
+              (node) => node.textContent?.trim(),
+            );
+            if (!/^[3-5]\\/5$/.test(stagedScore || '')) {
+              throw new Error(`Mission score did not advance after staging: ${stagedScore}`);
+            }
             await page.focus('#pathSteps [data-path-step="2"]');
             await page.keyboard.press('Enter');
             await page.waitForTimeout(500);

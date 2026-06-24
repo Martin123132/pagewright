@@ -56,6 +56,9 @@ def test_index_serves_product_workbench(client: TestClient) -> None:
     assert "presetSaveButton" in response.text
     assert "missionTitle" in response.text
     assert "missionActionButton" in response.text
+    assert "missionControl" in response.text
+    assert "missionControlScore" in response.text
+    assert "missionChecks" in response.text
     assert "recoveryPanel" in response.text
     assert "recentList" in response.text
     assert "recentLimitSelect" in response.text
@@ -117,6 +120,11 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert "focusNextStep" in response.text
     assert "resetWorkbench" in response.text
     assert "renderMission" in response.text
+    assert "renderMissionControl" in response.text
+    assert "getMissionControlItems" in response.text
+    assert "getSettingIssues" in response.text
+    assert "handleMissionControlAction" in response.text
+    assert "data-check-action" in response.text
     assert "renderJobPreview" in response.text
     assert "saveRoutePreset" in response.text
     assert "applyRoutePreset" in response.text
@@ -163,6 +171,9 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert styles.status_code == 200
     assert ".path-welcome[hidden]" in styles.text
     assert ".route-suggestion[hidden]" in styles.text
+    assert ".mission-control" in styles.text
+    assert ".mission-checks" in styles.text
+    assert ".mission-check[data-status=\"ready\"]" in styles.text
 
 
 def test_merge_job_creates_downloadable_pdf(client: TestClient) -> None:
