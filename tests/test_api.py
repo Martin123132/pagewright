@@ -62,6 +62,13 @@ def test_index_serves_product_workbench(client: TestClient) -> None:
     assert "cleanupList" in response.text
     assert "cleanupRefreshButton" in response.text
     assert "/static/app.js" in response.text
+    assert "pathNextHint" in response.text
+    assert "path-next-hint" in response.text
+    assert "pathQuickActions" in response.text
+    assert "pathWelcome" in response.text
+    assert "pathWelcomeDismiss" in response.text
+    assert "routeSuggestion" in response.text
+    assert "routeSuggestionButton" in response.text
 
 
 def test_static_assets_are_served(client: TestClient) -> None:
@@ -79,6 +86,11 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert "repeatReceiptSetup" in response.text
     assert "Wrong file type" in response.text
     assert "clearStage" in response.text
+    assert "getRouteSuggestion" in response.text
+    assert "getStagedFileProfile" in response.text
+    assert "suggest-route" in response.text
+    assert "routeSuggestionLabel" in response.text
+    assert "routeSuggestionButton" in response.text
     assert "orderSensitiveRoutes" in response.text
     assert "getOrderSummary" in response.text
     assert "syncSuggestedOutputName" in response.text
@@ -119,6 +131,15 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert "chooseComparedRoute" in response.text
     assert "runComparedSample" in response.text
     assert "selected from compare" in response.text
+    assert "step-action" in response.text
+    assert "step-hint" in response.text
+    assert "path-step" in response.text
+    assert "data-path-action" in response.text
+    assert "handlePathQuickAction" in response.text
+    assert "PATH_WELCOME_KEY" in response.text
+    assert "loadWelcomeState" in response.text
+    assert "dismissPathWelcome" in response.text
+    assert "event.defaultPrevented" in response.text
     assert "data-route" in response.text
     assert "data-route-action" in response.text
     assert "aria-label=\"${operation.routeLabel} route" in response.text
@@ -137,6 +158,11 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert "data-delete-output" in response.text
     assert "Output name" in response.text
     assert "output_name" in response.text
+
+    styles = client.get("/static/styles.css")
+    assert styles.status_code == 200
+    assert ".path-welcome[hidden]" in styles.text
+    assert ".route-suggestion[hidden]" in styles.text
 
 
 def test_merge_job_creates_downloadable_pdf(client: TestClient) -> None:
@@ -360,6 +386,19 @@ def test_output_cleanup_rejects_path_escape(client: TestClient) -> None:
 
     assert exc.value.status_code == 400
     assert "Invalid output job id" in exc.value.detail
+
+
+def test_output_cleanup_rejects_traversal_or_absolute_ids(client: TestClient) -> None:
+    paths: StoragePaths = client.app.state.storage_paths
+    for bad_job_id in ("..", "a/../b", "a\\..\\b", "C:/outside", "C:\\outside"):
+        with pytest.raises(HTTPException) as exc:
+            _output_job_dir(paths, bad_job_id)
+
+        assert exc.value.status_code == 400
+        assert (
+            "Invalid output job id" in exc.value.detail
+            or "Output cleanup target escaped storage root." in exc.value.detail
+        )
 
 
 def test_output_cleanup_rejects_c_drive_outputs() -> None:

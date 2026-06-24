@@ -96,6 +96,10 @@
                 <button class="route-intel-primary" type="button" id="routeIntelPrimaryButton" data-route-action="stage-sample">Stage sample</button>
                 <button class="route-intel-secondary" type="button" id="routeIntelSecondaryButton">Try sample</button>
               </div>
+              <div class="route-suggestion" id="routeSuggestion" hidden>
+                <div id="routeSuggestionLabel" class="route-suggestion-label">Guided path hint</div>
+                <button class="route-suggestion-button" type="button" id="routeSuggestionButton"></button>
+              </div>
             </div>
           </section>
 
@@ -229,8 +233,19 @@
 
         <aside class="path-rail" aria-label="Job path">
           <div class="path-card">
-            <div class="path-title">Path</div>
+            <div class="path-card-header">
+              <div>
+                <div class="path-title">Path</div>
+                <div class="path-next-label">Next move</div>
+              </div>
+              <span id="pathNextHint" class="path-next-hint">Pick</span>
+            </div>
+            <div id="pathWelcome" class="path-welcome" role="status" hidden>
+              <p>Welcome to the open workbench. Use any route you want, and mission hints help you keep momentum.</p>
+              <button class="mini-button" type="button" id="pathWelcomeDismiss">Got it</button>
+            </div>
             <ol id="pathSteps" class="path-steps"></ol>
+            <div id="pathQuickActions" class="path-quick-actions" aria-label="Quick guided actions"></div>
           </div>
           <div class="recent-card">
             <div class="recent-header">

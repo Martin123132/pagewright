@@ -64,7 +64,29 @@ $env:TMP='D:\CodexProjects\pdf-forge\scratch\tmp'
 
 Open `http://127.0.0.1:8787/`, choose any route, click **Stage sample**, then **Build**. Outputs land in ignored folders under `D:\CodexProjects\pdf-forge\outputs`. Staged PDFs show a local page-count hint when the browser can read the generated sample or selected file.
 
+### Quick first run (roughly 60 seconds)
+
+1. Choose a route.
+2. Click **Stage sample**.
+3. Confirm staged files show filename, size, and page count where available (PDFs only).
+4. Click **Build** and open the output card in **Outputs**.
+5. In the outputs list, use the local cleanup controls to clear stale job folders and keep your `D:\` workspace tidy.
+
 If you drop an unsupported file type, the Mission strip now offers a **guided recovery action** (for example, jump to Images or Extract/Combine routes), so you can recover quickly instead of getting stuck.
+
+### Recovery and cleanup helpers
+
+The demo route also supports quick guided actions:
+
+- **Stage sample / browse / build / outputs** for rapid workflow continuity.
+- **Compare routes / switch route** for recovery when you picked the wrong path.
+- **New job / output path map** for easy restart.
+
+Generated output folders are always under the project output root and can be reviewed from the **Outputs** card:
+
+- Refresh to see current job folders.
+- Delete selected job folders once you are done.
+- Delete is constrained to the Pagewright output area only (hard guardrails prevent deleting outside paths or `C:\` folders).
 
 Run tests:
 
@@ -74,6 +96,21 @@ Run tests:
 .\.venv\Scripts\python.exe examples\check_synthetic_proof.py
 .\.venv\Scripts\python.exe examples\check_public_readiness.py
 ```
+
+Run browser-guided recovery smoke (optional, local-only):
+
+```powershell
+$env:TEMP='D:\CodexProjects\pdf-forge\scratch\tmp'
+$env:TMP='D:\CodexProjects\pdf-forge\scratch\tmp'
+$env:npm_config_cache='D:\CodexProjects\pdf-forge\scratch\npm-cache'
+$env:PLAYWRIGHT_BROWSERS_PATH='D:\CodexProjects\pdf-forge\scratch\playwright-browsers'
+npm.cmd install --prefix D:\CodexProjects\pdf-forge\scratch\playwright-runtime playwright
+D:\CodexProjects\pdf-forge\scratch\playwright-runtime\node_modules\.bin\playwright.cmd install chromium
+$env:NODE_PATH='D:\CodexProjects\pdf-forge\scratch\playwright-runtime\node_modules'
+.\.venv\Scripts\python.exe examples\smoke_recovery.py
+```
+
+The smoke check writes its generated fixture, script, and desktop/mobile screenshots under `D:\CodexProjects\pdf-forge\scratch\smoke` and `D:\CodexProjects\pdf-forge\scratch\tmp`; those paths are ignored local evidence.
 
 GitHub Actions runs the same Ruff, Pytest, synthetic proof, and public readiness checks on pushes and pull requests to `main`.
 

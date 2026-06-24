@@ -196,11 +196,46 @@ const sampleAssets = {
 };
 
 const pathCopy = [
-  ["Choose", "Pick the operation."],
-  ["Stage", "Add local files."],
-  ["Tune", "Set the output."],
-  ["Build", "Run the engine."],
-  ["Claim", "Download results."],
+  {
+    copy: "Pick the operation.",
+    focus: "#operationNav button",
+    icon: "bundle",
+    label: "Choose",
+    action: "Pick",
+    hint: "1",
+  },
+  {
+    copy: "Add files that match the route.",
+    focus: "#dropZone",
+    icon: "up",
+    label: "Stage",
+    action: "Browse",
+    hint: "2",
+  },
+  {
+    copy: "Set output name and options.",
+    focus: "#settingsForm input, #settingsForm select",
+    icon: "render",
+    label: "Tune",
+    action: "Adjust",
+    hint: "3",
+  },
+  {
+    copy: "Run a clean build.",
+    focus: "#runButton",
+    icon: "spark",
+    label: "Build",
+    action: "Build",
+    hint: "Enter",
+  },
+  {
+    copy: "Collect and download.",
+    focus: ".results-list .claim-primary, .results-list .claim-secondary",
+    icon: "download",
+    label: "Claim",
+    action: "Download",
+    hint: "Done",
+  },
 ];
 
 const state = {
@@ -221,6 +256,7 @@ const state = {
   recovery: null,
   results: [],
   running: false,
+  welcomeDismissed: false,
 };
 
 let pendingReceipt = null;
@@ -242,6 +278,9 @@ const dom = {
   routeIntelFacts: document.querySelector("#routeIntelFacts"),
   routeIntelPrimaryButton: document.querySelector("#routeIntelPrimaryButton"),
   routeIntelSecondaryButton: document.querySelector("#routeIntelSecondaryButton"),
+  routeSuggestion: document.querySelector("#routeSuggestion"),
+  routeSuggestionLabel: document.querySelector("#routeSuggestionLabel"),
+  routeSuggestionButton: document.querySelector("#routeSuggestionButton"),
   operationTitle: document.querySelector("#operationTitle"),
   operationTagline: document.querySelector("#operationTagline"),
   fileRequirement: document.querySelector("#fileRequirement"),
@@ -284,8 +323,14 @@ const dom = {
   cleanupRefreshButton: document.querySelector("#cleanupRefreshButton"),
   cleanupSummary: document.querySelector("#cleanupSummary"),
   pathSteps: document.querySelector("#pathSteps"),
+  pathNextHint: document.querySelector("#pathNextHint"),
+  pathQuickActions: document.querySelector("#pathQuickActions"),
+  pathWelcome: document.querySelector("#pathWelcome"),
+  pathWelcomeDismiss: document.querySelector("#pathWelcomeDismiss"),
   storageStatus: document.querySelector("#storageStatus"),
 };
+
+const PATH_WELCOME_KEY = "pdfForgePathWelcomeDismissed";
 
 function icon(name) {
   const icons = {
@@ -436,6 +481,7 @@ function renderPresetPanel() {
 function renderRouteIntel() {
   const operation = currentOperation();
   const mission = getMissionState();
+  const suggestion = getRouteSuggestion();
   const staged =
     state.files.length >= operation.minFiles
       ? `${state.files.length} staged`
@@ -461,6 +507,19 @@ function renderRouteIntel() {
   dom.routeIntelPrimaryButton.dataset.routeAction = mission.action;
   dom.routeIntelPrimaryButton.setAttribute("data-route-action", mission.action);
   dom.routeIntelPrimaryButton.disabled = mission.disabled;
+
+  if (dom.routeSuggestion && suggestion) {
+    dom.routeSuggestion.hidden = false;
+    dom.routeSuggestionLabel.textContent = "Guided path hint";
+    dom.routeSuggestionButton.textContent = suggestion.label;
+    dom.routeSuggestionButton.dataset.routeSuggestion = suggestion.routeKey;
+    dom.routeSuggestionButton.title = suggestion.detail;
+  } else if (dom.routeSuggestion) {
+    dom.routeSuggestion.hidden = true;
+    dom.routeSuggestionButton.removeAttribute("data-route-suggestion");
+    dom.routeSuggestionButton.textContent = "";
+    dom.routeSuggestionButton.title = "";
+  }
 }
 
 function renderField(field) {
@@ -1122,21 +1181,363 @@ function renderRecovery() {
 
 function renderPath() {
   const activeIndex = getActiveStepIndex();
+  const mission = getMissionState();
+  const activeStep = pathCopy[Math.min(activeIndex, pathCopy.length - 1)];
+  const nextCopy = activeStep?.action ?? "Next";
+  const nextHint = activeStep?.hint ?? "";
+  if (dom.pathNextHint) {
+    dom.pathNextHint.textContent = `${nextCopy} ${nextHint}`.trim();
+  }
+
   dom.pathSteps.innerHTML = pathCopy
-    .map(([label, copy], index) => {
+    .map((step, index) => {
       const stepNumber = index + 1;
       const stepState = index < activeIndex ? "done" : index === activeIndex ? "active" : "waiting";
+      const label = step.label ?? "Path";
+      const copy = step.copy ?? "";
+      const action = step.action ?? "Go";
+      const hint = step.hint ?? "";
       return `
-        <li class="path-step" data-state="${stepState}">
+        <li
+          class="path-step"
+          data-state="${stepState}"
+          data-path-step="${index}"
+          data-action="${action}"
+          tabindex="0"
+          role="button"
+          aria-label="Go to ${label}"
+          aria-current="${index === activeIndex ? "step" : "false"}"
+        >
+          <span class="step-icon">${icon(step.icon || "spark")}</span>
           <span class="step-index">${stepNumber}</span>
           <span>
             <span class="step-label">${label}</span>
             <span class="step-copy">${copy}</span>
+            <span class="step-action">${action}</span>
           </span>
+          <span class="step-hint" aria-hidden="true">${hint}</span>
         </li>
       `;
     })
     .join("");
+
+  if (dom.pathQuickActions) {
+    dom.pathQuickActions.innerHTML = getPathQuickActions(activeIndex, mission)
+      .map((action) => {
+        const routeSuggestion = action.routeKey ? ` data-route-suggestion="${action.routeKey}"` : "";
+        return `<button class="path-quick-action" type="button" data-path-action="${action.action}"${routeSuggestion}>${action.label}</button>`;
+      })
+      .join("");
+  }
+
+  if (dom.pathWelcome) {
+    dom.pathWelcome.hidden = state.welcomeDismissed;
+  }
+}
+
+function goToPathStep(index) {
+  const step = pathCopy[index];
+  if (!step) return;
+
+  if (index === 0) {
+    focusPathTarget(step.focus, "#operationNav");
+    return;
+  }
+
+  if (index === 1) {
+    focusPathTarget(step.focus, "#dropZone", "#browseButton", "#fileInput");
+    return;
+  }
+
+  if (index === 2) {
+    focusPathTarget(step.focus, "#settingsForm .field input, #settingsForm .field select", "#runButton");
+    return;
+  }
+
+  if (index === 3) {
+    focusPathTarget(step.focus, "#runButton");
+    return;
+  }
+
+  if (index === 4) {
+    if (state.results.length > 0) {
+      const claimTarget = state.bundle ? ".claim-card .claim-primary" : ".result-row .download-button";
+      focusPathTarget(claimTarget, "#resultsList");
+      return;
+    }
+
+    focusPathTarget("#runButton");
+    renderMessage("Build first to unlock outputs.", "error");
+    return;
+  }
+
+  focusPathTarget(step.focus, "#runButton");
+}
+
+function getPathQuickActions(activeIndex, mission) {
+  const actions = [];
+  const operation = currentOperation();
+  const suggestion = getRouteSuggestion();
+
+  if (state.running) {
+    return [
+      { action: "pause", label: "Building..." },
+      { action: "view-path", label: "Path map" },
+    ];
+  }
+
+  if (state.results.length > 0) {
+    actions.push({
+      action: "outputs",
+      label: "Open outputs",
+    });
+    actions.push({
+      action: "new-job",
+      label: "New job",
+    });
+    actions.push({
+      action: "compare-routes",
+      label: "Compare routes",
+    });
+    return actions;
+  }
+
+  if (
+    state.recovery &&
+    mission.action === "switch-route" &&
+    mission.routeKey &&
+    operations[mission.routeKey]
+  ) {
+    actions.push({
+      action: "switch-route",
+      label: `Switch to ${operations[mission.routeKey].routeLabel}`,
+    });
+    actions.push({
+      action: "browse",
+      label: "Browse files",
+    });
+    actions.push({
+      action: "compare-routes",
+      label: "Compare routes",
+    });
+    return actions;
+  }
+
+  if (suggestion) {
+    actions.push({
+      action: "suggest-route",
+      routeKey: suggestion.routeKey,
+      label: suggestion.quickActionLabel,
+    });
+  }
+
+  if (state.files.length >= operation.minFiles) {
+    actions.push({
+      action: "forge",
+      label: mission.actionLabel || "Build now",
+    });
+    actions.push({
+      action: "browse",
+      label: "Add more files",
+    });
+    if (activeIndex >= 2) {
+      actions.push({
+        action: "new-route",
+        label: "Try another route",
+      });
+    } else {
+      actions.push({
+        action: "compare-routes",
+        label: "Compare routes",
+      });
+    }
+    return actions;
+  }
+
+  if (state.files.length > 0) {
+    actions.push({
+      action: "stage-sample",
+      label: "Fill with sample",
+    });
+    actions.push({
+      action: "browse",
+      label: "Browse files",
+    });
+    actions.push({
+      action: "path-ops",
+      label: "Try another route",
+    });
+    return actions;
+  }
+
+  actions.push({
+    action: "stage-sample",
+    label: `Stage ${operation.requirement} sample`,
+  });
+  actions.push({
+    action: "compare-routes",
+    label: "Compare routes",
+  });
+  actions.push({
+    action: "browse",
+    label: "Browse files",
+  });
+  return actions;
+}
+
+function getRouteSuggestion() {
+  if (state.results.length > 0 || state.running || state.files.length === 0) {
+    return null;
+  }
+
+  if (
+    state.recovery &&
+    state.recovery.title === "Wrong file type" &&
+    state.recovery.suggestedOperation &&
+    operations[state.recovery.suggestedOperation]
+  ) {
+    const suggested = operations[state.recovery.suggestedOperation];
+    return {
+      routeKey: state.recovery.suggestedOperation,
+      label: `Try ${suggested.routeLabel} route`,
+      quickActionLabel: `Switch to ${suggested.routeLabel}`,
+      detail: state.recovery.detail,
+    };
+  }
+
+  const fileProfile = getStagedFileProfile();
+  if (fileProfile.totalFiles === 0 || fileProfile.hasMixed) return null;
+
+  if (!fileProfile.hasImage && fileProfile.pdfCount > 1 && state.operationKey !== "merge") {
+    return {
+      routeKey: "merge",
+      label: "Try Merge route",
+      quickActionLabel: "Try Merge",
+      detail: "Your staged files are all PDFs. Combine route can join them into one file.",
+    };
+  }
+
+  if (!fileProfile.hasPdf && fileProfile.imageCount > 0 && state.operationKey !== "images-to-pdf") {
+    return {
+      routeKey: "images-to-pdf",
+      label: "Try Images route",
+      quickActionLabel: "Try Images route",
+      detail: "Your staged files are images. Images-to-PDF route is the direct fit.",
+    };
+  }
+
+  return null;
+}
+
+function getStagedFileProfile() {
+  const pdfExtensions = new Set([".pdf"]);
+  const imageExtensionsSet = new Set([".png", ".jpg", ".jpeg", ".webp"]);
+  const counts = {
+    totalFiles: state.files.length,
+    pdfCount: 0,
+    imageCount: 0,
+    hasPdf: false,
+    hasImage: false,
+    hasMixed: false,
+  };
+
+  for (const file of state.files) {
+    const extension = fileExtension(file.name).toLowerCase();
+    const isPdf = pdfExtensions.has(extension);
+    const isImage = imageExtensionsSet.has(extension);
+    counts.hasPdf = counts.hasPdf || isPdf;
+    counts.hasImage = counts.hasImage || isImage;
+    if (isPdf) {
+      counts.pdfCount += 1;
+    }
+    if (isImage) {
+      counts.imageCount += 1;
+    }
+  }
+
+  counts.hasMixed = counts.hasPdf && counts.hasImage;
+  return counts;
+}
+
+function handlePathQuickAction(action, routeKey = null) {
+  if (action === "pause") return;
+
+  if (action === "view-path") {
+    goToPathStep(0);
+    return;
+  }
+
+  if (action === "stage-sample") {
+    stageSampleFiles();
+    return;
+  }
+
+  if (action === "browse") {
+    dom.fileInput.click();
+    return;
+  }
+
+  if (action === "forge") {
+    runJob();
+    return;
+  }
+
+  if (action === "outputs") {
+    document.querySelector(".results-panel").scrollIntoView({ block: "start", behavior: "smooth" });
+    return;
+  }
+
+  if (action === "new-job") {
+    startNewJob();
+    return;
+  }
+
+  if (action === "compare-routes") {
+    if (dom.routeComparePanel.hidden) {
+      dom.routeCompareToggle.click();
+    } else {
+      renderRouteCompare();
+    }
+    focusElement(dom.routeComparePanel);
+    return;
+  }
+
+  if (action === "switch-route") {
+    const routeKey = getMissionState().routeKey;
+    if (routeKey) {
+      setOperation(routeKey);
+      renderMessage(`Switched to ${operations[routeKey]?.title || "selected"} route.`);
+      return;
+    }
+  }
+
+  if (action === "new-route") {
+    goToPathStep(0);
+    return;
+  }
+
+  if (action === "path-ops") {
+    document.querySelector(".operation-rail").scrollIntoView({ block: "start", behavior: "smooth" });
+    return;
+  }
+
+  if (action === "suggest-route") {
+    if (!routeKey) return;
+    setOperation(routeKey);
+    renderMessage(`Switched to ${operations[routeKey]?.title || "selected"} route.`);
+    return;
+  }
+}
+
+function focusPathTarget(primarySelector, ...fallbackSelectors) {
+  const primary = primarySelector ? document.querySelector(primarySelector) : null;
+  const fallback = fallbackSelectors.find((selector) => document.querySelector(selector));
+  const fallbackTarget = fallback ? document.querySelector(fallback) : null;
+  const target = primary || fallbackTarget;
+  if (!target) return;
+
+  target.scrollIntoView({ block: "center", behavior: "smooth" });
+  focusElement(target);
 }
 
 function renderMission() {
@@ -1311,6 +1712,8 @@ function focusNextStep() {
 }
 
 function handleGlobalKeydown(event) {
+  if (event.defaultPrevented) return;
+
   if (event.key === "Enter") {
     handleEnterShortcut(event);
     return;
@@ -1328,11 +1731,17 @@ function handleEnterShortcut(event) {
 }
 
 function canForgeFromTarget(target) {
-  if (!target || target === document.body) return true;
+  if (!target || target === document.body || target === document.documentElement) return false;
   const tagName = target.tagName;
   if (tagName === "TEXTAREA" || tagName === "SELECT") return false;
   if (target.closest?.("button, a")) return false;
-  return Boolean(target.closest?.("#settingsForm") || target.closest?.(".app-shell"));
+  return Boolean(
+    target.closest?.("#settingsForm") ||
+      target.closest?.("#runButton") ||
+      target.closest?.("#missionStrip") ||
+      target.closest?.(".job-stage") ||
+      target.closest?.("#pathSteps"),
+  );
 }
 
 function handleEscapeShortcut(event) {
@@ -1834,6 +2243,14 @@ function loadRecent() {
   }
 }
 
+function loadWelcomeState() {
+  try {
+    state.welcomeDismissed = localStorage.getItem(PATH_WELCOME_KEY) === "true";
+  } catch {
+    state.welcomeDismissed = false;
+  }
+}
+
 function saveRecent() {
   localStorage.setItem("pdfForgeRecent", JSON.stringify(state.recent));
 }
@@ -1845,6 +2262,16 @@ function readRecentLimit() {
 
 function saveRecentLimit() {
   localStorage.setItem("pdfForgeRecentLimit", String(state.recentLimit));
+}
+
+function saveWelcomeState() {
+  localStorage.setItem(PATH_WELCOME_KEY, String(state.welcomeDismissed));
+}
+
+function dismissPathWelcome() {
+  state.welcomeDismissed = true;
+  saveWelcomeState();
+  renderPath();
 }
 
 function loadPresets() {
@@ -1917,6 +2344,14 @@ dom.routeIntelPrimaryButton.addEventListener("click", () => {
   stageSampleFiles();
 });
 dom.routeIntelSecondaryButton.addEventListener("click", runDemoJob);
+dom.routeSuggestionButton?.addEventListener("click", () => {
+  const routeSuggestion = dom.routeSuggestionButton.dataset.routeSuggestion;
+  if (routeSuggestion) {
+    clearStage();
+    setOperation(routeSuggestion);
+    renderMessage(`Switched to ${operations[routeSuggestion]?.title || "suggested"} route.`);
+  }
+});
 dom.recoverySampleButton.addEventListener("click", stageSampleFiles);
 dom.recoverySwitchButton.addEventListener("click", () => {
   const route = dom.recoverySwitchButton.dataset.route;
@@ -1989,6 +2424,31 @@ dom.fileList.addEventListener("dragstart", handleFileDragStart);
 dom.fileList.addEventListener("dragover", handleFileDragOver);
 dom.fileList.addEventListener("drop", handleFileDrop);
 dom.fileList.addEventListener("dragend", handleFileDragEnd);
+dom.pathSteps.addEventListener("click", (event) => {
+  const stepItem = event.target.closest("[data-path-step]");
+  if (!stepItem) return;
+  const pathStep = Number(stepItem.dataset.pathStep);
+  if (!Number.isInteger(pathStep)) return;
+  goToPathStep(pathStep);
+});
+dom.pathSteps.addEventListener("keydown", (event) => {
+  if (!(event.key === "Enter" || event.key === " ")) return;
+  event.preventDefault();
+  const stepItem = event.target.closest("[data-path-step]");
+  if (!stepItem) return;
+  const pathStep = Number(stepItem.dataset.pathStep);
+  if (!Number.isInteger(pathStep)) return;
+  goToPathStep(pathStep);
+});
+dom.pathQuickActions.addEventListener("click", (event) => {
+  const actionButton = event.target.closest("[data-path-action]");
+  if (!actionButton) return;
+  const action = actionButton.dataset.pathAction;
+  if (!action) return;
+  const routeSuggestion = actionButton.dataset.routeSuggestion || null;
+  handlePathQuickAction(action, routeSuggestion);
+});
+dom.pathWelcomeDismiss?.addEventListener("click", dismissPathWelcome);
 
 dom.resultsList.addEventListener("click", (event) => {
   const repeatButton = event.target.closest("[data-repeat-job]");
@@ -2077,6 +2537,7 @@ dom.dropZone.addEventListener("drop", (event) => {
 
 loadRecent();
 loadPresets();
+loadWelcomeState();
 renderOperation();
 renderOutputCleanup();
 hydrateStatus();
