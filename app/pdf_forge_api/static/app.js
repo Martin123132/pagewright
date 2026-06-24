@@ -250,6 +250,7 @@ const state = {
   outputNameTouched: false,
   outputJobs: [],
   outputJobsLoading: false,
+  pendingCleanupJobId: null,
   presets: {},
   recent: [],
   recentLimit: 5,
@@ -321,6 +322,7 @@ const dom = {
   resultsList: document.querySelector("#resultsList"),
   resultCount: document.querySelector("#resultCount"),
   recentList: document.querySelector("#recentList"),
+  recentSummary: document.querySelector("#recentSummary"),
   recentLimitSelect: document.querySelector("#recentLimitSelect"),
   clearRecentButton: document.querySelector("#clearRecentButton"),
   cleanupList: document.querySelector("#cleanupList"),
@@ -1044,53 +1046,77 @@ function repeatReceiptSetup() {
 function renderRecent() {
   dom.recentLimitSelect.value = String(state.recentLimit);
   if (state.recent.length === 0) {
+    dom.recentSummary.textContent = "No local jobs pinned yet.";
     dom.recentList.innerHTML = '<div class="recent-empty">No recent outputs</div>';
     dom.clearRecentButton.disabled = true;
     return;
   }
 
   dom.clearRecentButton.disabled = false;
+  dom.recentSummary.textContent = `${state.recent.length} local job${state.recent.length === 1 ? "" : "s"} kept for quick access.`;
   dom.recentList.innerHTML = state.recent
     .map(
-      (job, index) => `
+      (job, index) => {
+        const route = operations[job.operation]?.routeLabel || "Route";
+        const operationLabel = job.operationLabel || operations[job.operation]?.title || "Recent job";
+        const createdAt = job.createdAt || "recent";
+        const outputCount = recentOutputCount(job);
+        const outputLabel = `${outputCount} output${outputCount === 1 ? "" : "s"}`;
+        return `
         <article class="recent-job">
           <button class="recent-load" type="button" data-load-recent="${index}">
-            <span class="recent-operation">${escapeHtml(job.operationLabel)}</span>
-            <span class="recent-time">${escapeHtml(job.createdAt)}</span>
+            <span class="recent-route">${escapeHtml(route)}</span>
+            <span class="recent-operation">${escapeHtml(operationLabel)}</span>
+            <span class="recent-meta">${escapeHtml(outputLabel)} - ${escapeHtml(createdAt)}</span>
           </button>
-          <button class="recent-remove" type="button" data-remove-recent="${index}" aria-label="Remove ${escapeHtml(job.operationLabel)} from recent">
+          <button class="recent-remove" type="button" data-remove-recent="${index}" aria-label="Remove ${escapeHtml(operationLabel)} from recent">
             ${icon("close")}
             <span>Remove</span>
           </button>
-          <div class="recent-files">
-            ${
-              job.bundle
-                ? `
-                  <a class="recent-bundle" href="${job.bundle.download_url}" download>
-                    ${icon("bundle")}
-                    Download all
-                  </a>
-                `
-                : ""
-            }
-            ${job.files
-              .map(
-                (file) => `
-                  <a href="${file.download_url}" download>
-                    ${icon("download")}
-                    ${escapeHtml(file.file_name)}
-                  </a>
-                `,
-              )
-              .join("")}
-          </div>
+          ${renderRecentFiles(job)}
         </article>
-      `,
+      `;
+      },
     )
     .join("");
   dom.recentList.querySelectorAll("[data-remove-recent]").forEach((button) => {
     button.addEventListener("click", handleRecentRemoveClick);
   });
+}
+
+function renderRecentFiles(job) {
+  const files = Array.isArray(job.files) ? job.files : [];
+  const visibleFiles = files.slice(0, 3);
+  const remainingCount = Math.max(0, files.length - visibleFiles.length);
+  return `
+    <div class="recent-files">
+      ${
+        job.bundle
+          ? `
+            <a class="recent-bundle" href="${job.bundle.download_url}" download>
+              ${icon("bundle")}
+              Download all
+            </a>
+          `
+          : ""
+      }
+      ${visibleFiles
+        .map(
+          (file) => `
+            <a href="${file.download_url}" download>
+              ${icon("download")}
+              ${escapeHtml(file.file_name)}
+            </a>
+          `,
+        )
+        .join("")}
+      ${remainingCount ? `<span class="recent-more">+${remainingCount} more</span>` : ""}
+    </div>
+  `;
+}
+
+function recentOutputCount(job) {
+  return Array.isArray(job.files) ? job.files.length : 0;
 }
 
 function handleRecentRemoveClick(event) {
@@ -1113,40 +1139,52 @@ function removeRecentJob(recentIndex) {
 function renderOutputCleanup() {
   dom.cleanupRefreshButton.disabled = state.outputJobsLoading;
   if (state.outputJobsLoading) {
-    dom.cleanupSummary.textContent = "Checking ignored output folders...";
+    dom.cleanupSummary.textContent = "Checking local output folders...";
     dom.cleanupList.innerHTML = '<div class="recent-empty">Scanning outputs</div>';
     return;
   }
 
   if (state.outputJobs.length === 0) {
-    dom.cleanupSummary.textContent = "No generated output folders found.";
+    dom.cleanupSummary.textContent = "No local output folders to clean.";
     dom.cleanupList.innerHTML = '<div class="recent-empty">Outputs are tidy</div>';
     return;
   }
 
   const totalSize = state.outputJobs.reduce((sum, job) => sum + job.size_bytes, 0);
   const totalFiles = state.outputJobs.reduce((sum, job) => sum + job.file_count, 0);
-  dom.cleanupSummary.textContent = `${state.outputJobs.length} folders - ${totalFiles} files - ${formatBytes(totalSize)}`;
+  dom.cleanupSummary.textContent = `${state.outputJobs.length} local folders - ${totalFiles} files - ${formatBytes(totalSize)}`;
   dom.cleanupList.innerHTML = state.outputJobs
     .map(
-      (job) => `
+      (job, index) => {
+        const confirming = state.pendingCleanupJobId === job.job_id;
+        const label = index === 0 ? "Newest local folder" : "Local output folder";
+        return `
         <article class="cleanup-job">
           <div class="cleanup-copy">
+            <div class="cleanup-label">${label}</div>
             <div class="cleanup-name">${escapeHtml(job.job_id)}</div>
             <div class="cleanup-meta">${job.file_count} file${job.file_count === 1 ? "" : "s"} - ${formatBytes(job.size_bytes)}</div>
           </div>
-          <button class="cleanup-delete" type="button" data-delete-output="${escapeHtml(job.job_id)}" aria-label="Delete output folder ${escapeHtml(job.job_id)}">
+          <button
+            class="cleanup-delete"
+            type="button"
+            data-delete-output="${escapeHtml(job.job_id)}"
+            data-state="${confirming ? "confirm" : "idle"}"
+            aria-label="${confirming ? "Confirm delete" : "Prepare to delete"} output folder ${escapeHtml(job.job_id)}"
+          >
             ${icon("close")}
-            <span>Delete</span>
+            <span>${confirming ? "Confirm" : "Delete"}</span>
           </button>
         </article>
-      `,
+      `;
+      },
     )
     .join("");
 }
 
 async function refreshOutputCleanup() {
   state.outputJobsLoading = true;
+  state.pendingCleanupJobId = null;
   renderOutputCleanup();
   try {
     const response = await fetch("/outputs/jobs");
@@ -1166,9 +1204,25 @@ async function refreshOutputCleanup() {
   }
 }
 
+function requestOutputDelete(jobId) {
+  if (!jobId || state.outputJobsLoading) return;
+  if (state.pendingCleanupJobId !== jobId) {
+    state.pendingCleanupJobId = jobId;
+    renderOutputCleanup();
+    renderMessage("Select Confirm to delete this local output folder.", "error");
+    const pendingButton = [...dom.cleanupList.querySelectorAll("[data-delete-output]")].find(
+      (button) => button.dataset.deleteOutput === jobId,
+    );
+    focusElement(pendingButton);
+    return;
+  }
+  deleteOutputJob(jobId);
+}
+
 async function deleteOutputJob(jobId) {
   if (!jobId || state.outputJobsLoading) return;
   state.outputJobsLoading = true;
+  state.pendingCleanupJobId = null;
   renderOutputCleanup();
   try {
     const response = await fetch(`/outputs/jobs/${encodeURIComponent(jobId)}`, { method: "DELETE" });
@@ -2717,7 +2771,7 @@ dom.cleanupRefreshButton.addEventListener("click", refreshOutputCleanup);
 dom.cleanupList.addEventListener("click", (event) => {
   const deleteButton = event.target.closest("[data-delete-output]");
   if (!deleteButton) return;
-  deleteOutputJob(deleteButton.dataset.deleteOutput);
+  requestOutputDelete(deleteButton.dataset.deleteOutput);
 });
 
 dom.recentLimitSelect.addEventListener("change", () => {

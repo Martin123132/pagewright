@@ -61,6 +61,7 @@ def test_index_serves_product_workbench(client: TestClient) -> None:
     assert "missionChecks" in response.text
     assert "recoveryPanel" in response.text
     assert "recentList" in response.text
+    assert "recentSummary" in response.text
     assert "recentLimitSelect" in response.text
     assert "cleanupList" in response.text
     assert "cleanupRefreshButton" in response.text
@@ -162,10 +163,14 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert "Merge order runs top to bottom" in response.text
     assert "pdfForgeRecent" in response.text
     assert "pdfForgeRecentLimit" in response.text
+    assert "renderRecentFiles" in response.text
+    assert "recentOutputCount" in response.text
     assert "trimRecent" in response.text
     assert "data-remove-recent" in response.text
     assert "/outputs/jobs" in response.text
     assert "refreshOutputCleanup" in response.text
+    assert "requestOutputDelete" in response.text
+    assert "pendingCleanupJobId" in response.text
     assert "deleteOutputJob" in response.text
     assert "clearDeletedOutputReferences" in response.text
     assert "data-delete-output" in response.text
@@ -182,6 +187,9 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert ".build-status-card" in styles.text
     assert ".build-status-card[data-phase=\"complete\"]" in styles.text
     assert "@keyframes build-pulse" in styles.text
+    assert ".rail-summary" in styles.text
+    assert ".recent-route" in styles.text
+    assert ".cleanup-delete[data-state=\"confirm\"]" in styles.text
 
 
 def test_merge_job_creates_downloadable_pdf(client: TestClient) -> None:

@@ -2270,6 +2270,14 @@ button:focus-visible {
   gap: 12px;
 }
 
+.rail-summary {
+  margin-top: 8px;
+  color: rgba(255, 254, 251, 0.62);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .recent-keep {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -2347,7 +2355,15 @@ button:focus-visible {
   min-width: 0;
 }
 
+.cleanup-label {
+  color: rgba(255, 254, 251, 0.45);
+  font-size: 10px;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
 .cleanup-name {
+  margin-top: 2px;
   overflow: hidden;
   color: var(--panel);
   font-size: 13px;
@@ -2381,6 +2397,12 @@ button:focus-visible {
   background: rgba(184, 50, 50, 0.22);
 }
 
+.cleanup-delete[data-state="confirm"] {
+  border-color: rgba(217, 141, 36, 0.72);
+  background: rgba(217, 141, 36, 0.18);
+  color: var(--panel);
+}
+
 .cleanup-delete svg {
   width: 16px;
   height: 16px;
@@ -2393,14 +2415,25 @@ button:focus-visible {
 
 .recent-load {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 5px 8px;
   width: 100%;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--panel);
   text-align: left;
+}
+
+.recent-route {
+  align-self: start;
+  padding: 3px 7px;
+  border: 1px solid rgba(55, 122, 84, 0.34);
+  border-radius: 999px;
+  color: rgba(255, 254, 251, 0.86);
+  background: rgba(55, 122, 84, 0.16);
+  font-size: 10px;
+  font-weight: 820;
 }
 
 .recent-remove {
@@ -2432,6 +2465,7 @@ button:focus-visible {
 }
 
 .recent-operation {
+  min-width: 0;
   overflow: hidden;
   font-size: 13px;
   font-weight: 780;
@@ -2439,7 +2473,8 @@ button:focus-visible {
   white-space: nowrap;
 }
 
-.recent-time {
+.recent-meta {
+  grid-column: 2;
   color: rgba(255, 254, 251, 0.55);
   font-size: 12px;
   font-weight: 660;
@@ -2465,6 +2500,12 @@ button:focus-visible {
 
 .recent-files a:hover {
   color: var(--panel);
+}
+
+.recent-more {
+  color: rgba(255, 254, 251, 0.52);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .recent-files svg {

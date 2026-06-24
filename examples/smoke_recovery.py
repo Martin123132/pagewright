@@ -160,6 +160,26 @@ def _build_sample_wrong_route_script(port: int) -> str:
               throw new Error(`Unexpected completion label: ${completeLabel}`);
             }
             await page.screenshot({ path: '__RESULT_SCREENSHOT__' });
+            const recentSummary = await page.$eval(
+              '#recentSummary',
+              (node) => node.textContent?.trim(),
+            );
+            if (!/local job/.test(recentSummary || '')) {
+              throw new Error(`Unexpected recent summary: ${recentSummary}`);
+            }
+            await page.waitForSelector('.recent-job .recent-route');
+            const firstCleanupDelete = page.locator('#cleanupList [data-delete-output]').first();
+            if ((await firstCleanupDelete.count()) === 0) {
+              throw new Error('Expected at least one cleanup candidate after build');
+            }
+            await firstCleanupDelete.click();
+            const confirmDelete = await page.$eval(
+              '#cleanupList [data-state="confirm"] span',
+              (node) => node.textContent?.trim(),
+            );
+            if (confirmDelete !== 'Confirm') {
+              throw new Error(`Cleanup delete did not require confirmation: ${confirmDelete}`);
+            }
 
             await page.setViewportSize({ width: 390, height: 844 });
             await page.goto(appUrl, { waitUntil: 'networkidle' });
