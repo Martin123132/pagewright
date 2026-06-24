@@ -1225,6 +1225,151 @@ h1 {
     var(--panel);
 }
 
+.build-status-card {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(217, 141, 36, 0.34);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(135deg, rgba(217, 141, 36, 0.12), transparent 62%),
+    var(--panel);
+}
+
+.build-status-card[data-phase="complete"] {
+  border-color: rgba(55, 122, 84, 0.34);
+  background:
+    linear-gradient(135deg, rgba(55, 122, 84, 0.12), transparent 62%),
+    var(--panel);
+}
+
+.build-status-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  color: var(--panel);
+  background: var(--amber);
+}
+
+.build-status-card[data-phase="complete"] .build-status-icon {
+  background: var(--green);
+}
+
+.build-status-copy {
+  min-width: 0;
+}
+
+.build-status-label {
+  color: var(--amber);
+  font-size: 11px;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.build-status-card[data-phase="complete"] .build-status-label {
+  color: var(--green);
+}
+
+.build-status-title {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 840;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.build-status-detail {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 660;
+  line-height: 1.35;
+}
+
+.build-status-meter {
+  position: relative;
+  height: 6px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(23, 23, 22, 0.11);
+}
+
+.build-status-meter span {
+  display: block;
+  width: 64%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--amber);
+}
+
+.build-status-card[data-phase="running"] .build-status-meter span {
+  animation: build-pulse 1.25s ease-in-out infinite alternate;
+}
+
+.build-status-card[data-phase="complete"] .build-status-meter span {
+  width: 100%;
+  background: var(--green);
+}
+
+.build-status-steps {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.build-status-step {
+  display: grid;
+  gap: 2px;
+  min-height: 48px;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-2);
+}
+
+.build-status-step[data-state="done"] {
+  border-color: rgba(55, 122, 84, 0.32);
+}
+
+.build-status-step[data-state="active"] {
+  border-color: rgba(217, 141, 36, 0.45);
+}
+
+.build-status-step strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 820;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.build-status-step small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 660;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes build-pulse {
+  from {
+    width: 42%;
+  }
+
+  to {
+    width: 78%;
+  }
+}
+
 .receipt-card {
   display: grid;
   gap: 10px;
@@ -1732,6 +1877,12 @@ button:focus-visible {
   border-color: var(--line);
   background: #9d9f98;
   box-shadow: none;
+}
+
+.primary-button[data-state="running"] {
+  border-color: rgba(217, 141, 36, 0.72);
+  background: var(--amber);
+  color: var(--ink);
 }
 
 .secondary-button,
@@ -2536,6 +2687,10 @@ button:focus-visible {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .build-status-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .stage-header {
     flex-direction: column;
   }
@@ -2660,6 +2815,14 @@ button:focus-visible {
   }
 
   .mission-checks {
+    grid-template-columns: 1fr;
+  }
+
+  .build-status-card {
+    grid-template-columns: 1fr;
+  }
+
+  .build-status-steps {
     grid-template-columns: 1fr;
   }
 

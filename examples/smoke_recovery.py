@@ -143,6 +143,24 @@ def _build_sample_wrong_route_script(port: int) -> str:
               throw new Error('Pressing Enter on a path step unexpectedly started a build');
             }
 
+            await page.route('**/jobs/merge', async (route) => {
+              const response = await route.fetch();
+              await new Promise((resolve) => setTimeout(resolve, 350));
+              await route.fulfill({ response });
+            });
+            await page.click('#missionChecks [data-check-action="forge"]');
+            await page.waitForSelector('.build-status-card[data-phase="running"]');
+            await page.waitForSelector('.build-status-card[data-phase="complete"]');
+            await page.waitForSelector('.claim-card');
+            const completeLabel = await page.$eval(
+              '.build-status-label',
+              (node) => node.textContent?.trim(),
+            );
+            if (completeLabel !== 'Build Complete') {
+              throw new Error(`Unexpected completion label: ${completeLabel}`);
+            }
+            await page.screenshot({ path: '__RESULT_SCREENSHOT__' });
+
             await page.setViewportSize({ width: 390, height: 844 });
             await page.goto(appUrl, { waitUntil: 'networkidle' });
             const overflow = await page.evaluate(
@@ -194,6 +212,10 @@ def _build_sample_wrong_route_script(port: int) -> str:
         .replace(
             "__MOBILE_SCREENSHOT__",
             str(ASSETS_DIR / "guided-path-mobile.png").replace("\\", "/"),
+        )
+        .replace(
+            "__RESULT_SCREENSHOT__",
+            str(ASSETS_DIR / "result-ready-desktop.png").replace("\\", "/"),
         )
     )
 

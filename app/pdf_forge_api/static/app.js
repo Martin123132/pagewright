@@ -621,6 +621,10 @@ function renderFiles() {
   }
 
   dom.runButton.disabled = !canRunJob();
+  dom.runButton.dataset.state = state.running ? "running" : "idle";
+  dom.runButton.innerHTML = state.running
+    ? `${icon("spark")}Building`
+    : `${icon("spark")}Build`;
   renderPath();
   renderMission();
   renderRouteIntel();
@@ -819,15 +823,22 @@ function sanitizeOutputStem(value) {
 
 function renderResults() {
   dom.resultCount.textContent =
-    state.bundle && state.results.length > 1
+    state.running
+      ? "Building"
+      : state.bundle && state.results.length > 1
       ? `${state.results.length} files + bundle`
       : `${state.results.length} ready`;
+  if (state.running) {
+    dom.resultsList.innerHTML = renderBuildStatus("running");
+    return;
+  }
   if (state.results.length === 0) {
     dom.resultsList.innerHTML = '<div class="empty-state">Outputs land here</div>';
     return;
   }
 
   const claim = getClaimSummary();
+  const buildMarkup = renderBuildStatus("complete");
   const receiptMarkup = renderReceipt();
   const claimMarkup = `
     <div class="claim-card">
@@ -883,9 +894,61 @@ function renderResults() {
       `,
     )
     .join("");
-  dom.resultsList.innerHTML = receiptMarkup + claimMarkup + bundleMarkup + fileMarkup;
+  dom.resultsList.innerHTML = buildMarkup + receiptMarkup + claimMarkup + bundleMarkup + fileMarkup;
   renderPath();
   renderMission();
+}
+
+function renderBuildStatus(phase) {
+  const operation = currentOperation();
+  const complete = phase === "complete";
+  const steps = [
+    ["Validate", "Inputs checked"],
+    ["Build", operation.routeTarget],
+    ["Package", complete ? getPackageLabel() : "Preparing output"],
+    ["Claim", complete ? getClaimSummary().action : "Almost ready"],
+  ];
+  return `
+    <article class="build-status-card" data-phase="${phase}">
+      <div class="build-status-icon">${icon(complete ? "check" : "spark")}</div>
+      <div class="build-status-copy">
+        <div class="build-status-label">${complete ? "Build Complete" : "Building Locally"}</div>
+        <div class="build-status-title">${complete ? getBuildCompleteTitle() : `${operation.title} in progress`}</div>
+        <div class="build-status-detail">${complete ? getBuildCompleteDetail() : "The engine is validating, building, and packaging your output."}</div>
+        <div class="build-status-meter" aria-hidden="true"><span></span></div>
+      </div>
+      <div class="build-status-steps">
+        ${steps
+          .map(
+            ([label, detail], index) => `
+              <span class="build-status-step" data-state="${complete ? "done" : index === 0 ? "done" : index === 1 ? "active" : "waiting"}">
+                <strong>${escapeHtml(label)}</strong>
+                <small>${escapeHtml(detail)}</small>
+              </span>
+            `,
+          )
+          .join("")}
+      </div>
+    </article>
+  `;
+}
+
+function getPackageLabel() {
+  if (state.bundle) return `${state.bundle.file_count} files bundled`;
+  return `${state.results.length} file${state.results.length === 1 ? "" : "s"}`;
+}
+
+function getBuildCompleteTitle() {
+  if (state.bundle) return "Bundle ready";
+  return state.results[0]?.file_name || "Output ready";
+}
+
+function getBuildCompleteDetail() {
+  const totalBytes = state.results.reduce((sum, result) => sum + result.size_bytes, 0);
+  if (state.bundle) {
+    return `${state.bundle.file_count} files packaged, ${formatBytes(state.bundle.size_bytes)} total.`;
+  }
+  return `${state.results.length} file${state.results.length === 1 ? "" : "s"}, ${formatBytes(totalBytes)} total.`;
 }
 
 function renderReceipt() {
@@ -1668,7 +1731,7 @@ function getMissionControlItems() {
     },
     {
       action: canBuild ? "forge" : null,
-      detail: state.running ? "Engine running" : canBuild ? "Ready to build" : "Waiting",
+      detail: hasOutputs ? "Finished" : state.running ? "Engine running" : canBuild ? "Ready to build" : "Waiting",
       icon: hasOutputs ? "check" : "spark",
       label: "Build",
       stateLabel: hasOutputs ? "Done" : state.running ? "Run" : canBuild ? "Go" : "Wait",
@@ -2125,17 +2188,20 @@ async function runJob() {
     completeReceipt(payload);
     rememberJob(payload);
     await refreshOutputCleanup();
+    state.running = false;
     renderResults();
     renderRecent();
     renderRouteIntel();
     renderMessage(`${state.results.length} output${state.results.length === 1 ? "" : "s"} ready.`, "success");
-    focusElement(document.querySelector(".claim-primary"));
+    focusClaimResults();
   } catch (error) {
     pendingReceipt = null;
+    state.running = false;
     state.recovery = {
       detail: "Check the staged files or use sample files to confirm the route still works.",
       title: "Build could not finish",
     };
+    renderResults();
     renderMessage(error.message || "Job failed.", "error");
     focusElement(dom.recoverySampleButton);
   } finally {
@@ -2181,16 +2247,25 @@ async function runDemoJob() {
     };
     rememberJob(payload);
     await refreshOutputCleanup();
+    state.running = false;
     renderResults();
     renderRecent();
     renderRouteIntel();
     renderMessage(`Sample complete. ${state.results.length} output${state.results.length === 1 ? "" : "s"} ready.`, "success");
+    focusClaimResults();
   } catch (error) {
+    state.running = false;
+    renderResults();
     renderMessage(error.message || "Sample job failed.", "error");
   } finally {
     state.running = false;
     renderFiles();
   }
+}
+
+function focusClaimResults() {
+  document.querySelector(".results-panel")?.scrollIntoView({ block: "start", behavior: "smooth" });
+  focusElement(document.querySelector(".claim-primary"));
 }
 
 function stageSampleFiles() {

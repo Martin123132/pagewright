@@ -124,7 +124,12 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert "getMissionControlItems" in response.text
     assert "getSettingIssues" in response.text
     assert "handleMissionControlAction" in response.text
+    assert "renderBuildStatus" in response.text
+    assert "getBuildCompleteTitle" in response.text
+    assert "getBuildCompleteDetail" in response.text
+    assert "focusClaimResults" in response.text
     assert "data-check-action" in response.text
+    assert "build-status-card" in response.text
     assert "renderJobPreview" in response.text
     assert "saveRoutePreset" in response.text
     assert "applyRoutePreset" in response.text
@@ -174,6 +179,9 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert ".mission-control" in styles.text
     assert ".mission-checks" in styles.text
     assert ".mission-check[data-status=\"ready\"]" in styles.text
+    assert ".build-status-card" in styles.text
+    assert ".build-status-card[data-phase=\"complete\"]" in styles.text
+    assert "@keyframes build-pulse" in styles.text
 
 
 def test_merge_job_creates_downloadable_pdf(client: TestClient) -> None:
