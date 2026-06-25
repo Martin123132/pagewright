@@ -5,10 +5,10 @@ build-backend = "hatchling.build"
 [project]
 name = "pdf-forge"
 version = "0.1.0"
-description = "Pagewright, a local-first open-source document toolkit."
+description = "Pagewright, a local-first source-available document toolkit for personal and non-commercial use."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = { file = "LICENSE" }
 authors = [
   { name = "Pagewright Contributors" }
 ]

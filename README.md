@@ -61,16 +61,22 @@ Run the CLI:
 
 ## Try Pagewright in 60 Seconds
 
-Use the built-in synthetic samples, no private documents required:
+Use the built-in synthetic samples, no private documents required. From a prepared checkout:
 
 ```powershell
 cd D:\CodexProjects\pdf-forge
-$env:TEMP='D:\CodexProjects\pdf-forge\scratch\tmp'
-$env:TMP='D:\CodexProjects\pdf-forge\scratch\tmp'
-.\.venv\Scripts\python.exe -m uvicorn pdf_forge_api.main:app --host 127.0.0.1 --port 8787
+.\scripts\start_pagewright.ps1
 ```
 
-Open `http://127.0.0.1:8787/`, choose any route, click **Stage sample**, then **Build**. Outputs land in ignored folders under `D:\CodexProjects\pdf-forge\outputs`. Staged PDFs show a local page-count hint when the browser can read the generated sample or selected file.
+The launcher sets `TEMP`, `TMP`, and Python bytecode cache paths under `D:\CodexProjects\pdf-forge\scratch`, opens `http://127.0.0.1:8787/`, and keeps generated outputs under ignored folders in `D:\CodexProjects\pdf-forge\outputs`.
+
+If you want the server URL without opening a browser:
+
+```powershell
+.\scripts\start_pagewright.ps1 -NoBrowser
+```
+
+Choose any route, click **Stage sample**, then **Build**. Staged PDFs show a local page-count hint when the browser can read the generated sample or selected file.
 
 ### Quick first run (roughly 60 seconds)
 
@@ -133,9 +139,7 @@ Install the API extras:
 Run the local API:
 
 ```powershell
-$env:TEMP='D:\CodexProjects\pdf-forge\scratch\tmp'
-$env:TMP='D:\CodexProjects\pdf-forge\scratch\tmp'
-.\.venv\Scripts\python.exe -m uvicorn pdf_forge_api.main:app --host 127.0.0.1 --port 8787 --reload
+.\scripts\start_pagewright.ps1 -NoBrowser
 ```
 
 The interactive docs are available at:

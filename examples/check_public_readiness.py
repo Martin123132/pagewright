@@ -11,6 +11,9 @@ READINESS_FILES = [
     Path("LICENSE"),
     Path("NOTICE.md"),
     Path("COMMERCIAL-LICENSE.md"),
+    Path("CONTRIBUTING.md"),
+    Path("pyproject.toml"),
+    Path("scripts/start_pagewright.ps1"),
     Path("SECURITY.md"),
     Path("docs/COMMIT_READINESS.md"),
     Path("docs/PROJECT_MAP.md"),
@@ -52,6 +55,7 @@ LOCAL_ONLY_OUTPUTS = [
 def main() -> None:
     _assert_files_exist(READINESS_FILES)
     _assert_license_posture()
+    _assert_launcher()
     _assert_readme_links()
     _assert_project_map()
     _assert_commit_readiness()
@@ -96,6 +100,7 @@ def _assert_readme_links() -> None:
             "examples\\check_synthetic_proof.py",
             "examples\\check_public_readiness.py",
             "Release Readiness",
+            "scripts\\start_pagewright.ps1",
         ],
     )
 
@@ -132,6 +137,52 @@ def _assert_license_posture() -> None:
     if "open-source document toolkit" in readme.lower():
         raise AssertionError("README.md still describes Pagewright as open-source.")
 
+    pyproject = _read("pyproject.toml").lower()
+    _require_all(
+        "pyproject.toml",
+        pyproject,
+        [
+            "source-available",
+            "personal and non-commercial",
+            'license = { file = "license" }',
+        ],
+    )
+    stale_pyproject = ["open-source", 'license = { text = "mit" }']
+    found = [value for value in stale_pyproject if value in pyproject]
+    if found:
+        raise AssertionError(f"pyproject.toml contains stale licence metadata: {found}")
+
+    contributing = _read("CONTRIBUTING.md").lower()
+    _require_all(
+        "CONTRIBUTING.md",
+        contributing,
+        [
+            "source-available",
+            "polyform noncommercial license 1.0.0",
+            "commercial use requires a separate written licence",
+            "scripts\\start_pagewright.ps1",
+        ],
+    )
+
+
+def _assert_launcher() -> None:
+    launcher = _read("scripts/start_pagewright.ps1")
+    _require_all(
+        "scripts/start_pagewright.ps1",
+        launcher,
+        [
+            "Refusing to run Pagewright from C:",
+            "$env:TEMP = $TempRoot",
+            "$env:TMP = $TempRoot",
+            "$env:PYTHONPYCACHEPREFIX = $PycacheRoot",
+            "outputs",
+            "uvicorn",
+            "pdf_forge_api.main:app",
+            "-NoBrowser",
+            "-Check",
+        ],
+    )
+
 
 def _assert_project_map() -> None:
     text = _read("docs/PROJECT_MAP.md")
@@ -147,6 +198,7 @@ def _assert_project_map() -> None:
             "examples\\check_public_readiness.py",
             "docs/RELEASE_READINESS.md",
             "docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md",
+            "scripts/start_pagewright.ps1",
             "examples\\generate_release_review_outcome.py",
             "examples\\run_release_review_dry_run.py",
             "local-only evidence",
@@ -194,6 +246,7 @@ def _assert_security_policy() -> None:
             "credentials",
             "private urls",
             "local absolute paths",
+            "glyn@twohandsnetwork.co.uk",
         ],
     )
 
@@ -392,6 +445,8 @@ def _assert_issue_templates() -> None:
             "secrets",
             "outputs/public-proof",
             "outputs/public-proof-check",
+            "licence posture is source-available",
+            "commercial use requires a separate written licence",
         ],
     )
 

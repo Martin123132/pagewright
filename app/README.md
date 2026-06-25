@@ -17,9 +17,7 @@ It refuses `C:` storage, path escapes, loose files, symlinks, and the outputs ro
 Run it from the repo root:
 
 ```powershell
-$env:TEMP='D:\CodexProjects\pdf-forge\scratch\tmp'
-$env:TMP='D:\CodexProjects\pdf-forge\scratch\tmp'
-.\.venv\Scripts\python.exe -m uvicorn pdf_forge_api.main:app --host 127.0.0.1 --port 8787 --reload
+.\scripts\start_pagewright.ps1 -NoBrowser
 ```
 
 Then open:

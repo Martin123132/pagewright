@@ -30,6 +30,8 @@ body:
           required: true
         - label: GitHub Actions CI is green on main.
           required: true
+        - label: Licence posture is source-available, personal/non-commercial, and commercial use requires a separate written licence.
+          required: true
   - type: checkboxes
     id: public_safety
     attributes:

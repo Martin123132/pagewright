@@ -6,9 +6,11 @@ Pagewright is early-stage local-first software for document processing.
 
 Please do not publish exploit details or sample private documents in public issues. If the issue can be described safely, use the privacy/security-sensitive issue form and avoid sensitive files, credentials, private URLs, personal data, proprietary data, local absolute paths, or exploit instructions.
 
-If the issue cannot be described safely in public, open only a minimal placeholder asking for a private reporting route.
+If the issue cannot be described safely in public, open only a minimal placeholder asking for a private reporting route, or contact:
 
-If a private contact channel is added later, this file will be updated with that route.
+```text
+Glyn : glyn@twohandsnetwork.co.uk
+```
 
 ## Handling Test Files
 

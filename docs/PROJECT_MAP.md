@@ -22,6 +22,7 @@ The local `main` branch tracks `origin/main`.
 - `app/pdf_forge_api/static/` - Pagewright browser UI: routes, staging, settings, presets, recent rail, keyboard flow.
 - `engine/pdf_forge/` - PDF operation engine and CLI implementation.
 - `examples/` - public-safe demo, proof, readiness, and release-review dry-run helpers using synthetic inputs only.
+- `scripts/start_pagewright.ps1` - one-command local launcher that keeps temp/cache/output paths under the D-drive project checkout.
 - `.github/ISSUE_TEMPLATE/` - public issue intake forms for conversion bugs, proof regressions, release-review issues, and privacy/security-sensitive reports.
 - `tests/` - API and engine regression tests.
 - `docs/` - architecture, product UI notes, roadmap, public proof, release readiness, release-review outcome template, and commit readiness.
@@ -58,9 +59,7 @@ Before publishing larger changes, review `docs/COMMIT_READINESS.md`, `docs/PUBLI
 
 ```powershell
 cd D:\CodexProjects\pdf-forge
-$env:TEMP='D:\CodexProjects\pdf-forge\scratch\tmp'
-$env:TMP='D:\CodexProjects\pdf-forge\scratch\tmp'
-.\.venv\Scripts\python.exe -m uvicorn pdf_forge_api.main:app --host 127.0.0.1 --port 8787 --reload
+.\scripts\start_pagewright.ps1
 ```
 
 Open:
