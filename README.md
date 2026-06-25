@@ -2,7 +2,15 @@
 
 [![CI](https://github.com/Martin123132/pagewright/actions/workflows/ci.yml/badge.svg)](https://github.com/Martin123132/pagewright/actions/workflows/ci.yml)
 
-Pagewright is a local-first, open-source document toolkit aimed at replacing everyday paid PDF subscriptions for common document work.
+Pagewright is a local-first, source-available document toolkit aimed at replacing everyday paid PDF subscriptions for personal and non-commercial document work.
+
+## Licence
+
+Pagewright is available for personal and non-commercial use under the PolyForm Noncommercial License 1.0.0. Commercial use requires a separate written licence from TWO HANDS NETWORK LTD. See [`LICENSE`](LICENSE), [`NOTICE.md`](NOTICE.md), and [`COMMERCIAL-LICENSE.md`](COMMERCIAL-LICENSE.md).
+
+For collaboration, information on existing products, or other enquiries, please contact (via Email):
+
+Glyn : glyn@twohandsnetwork.co.uk
 
 The project rule for this machine: keep all project files, scratch data, caches, build artifacts, and generated outputs on `D:`. This repo lives at:
 

@@ -8,6 +8,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 READINESS_FILES = [
     Path("README.md"),
+    Path("LICENSE"),
+    Path("NOTICE.md"),
+    Path("COMMERCIAL-LICENSE.md"),
     Path("SECURITY.md"),
     Path("docs/COMMIT_READINESS.md"),
     Path("docs/PROJECT_MAP.md"),
@@ -48,6 +51,7 @@ LOCAL_ONLY_OUTPUTS = [
 
 def main() -> None:
     _assert_files_exist(READINESS_FILES)
+    _assert_license_posture()
     _assert_readme_links()
     _assert_project_map()
     _assert_commit_readiness()
@@ -75,6 +79,12 @@ def _assert_readme_links() -> None:
             "docs/PUBLIC_PROOF.md",
             "docs/RELEASE_READINESS.md",
             "docs/RELEASE_REVIEW_OUTCOME_TEMPLATE.md",
+            "LICENSE",
+            "NOTICE.md",
+            "COMMERCIAL-LICENSE.md",
+            "source-available",
+            "personal and non-commercial use",
+            "glyn@twohandsnetwork.co.uk",
             "examples\\generate_release_review_outcome.py",
             "examples\\run_release_review_dry_run.py",
             "local-only evidence",
@@ -88,6 +98,39 @@ def _assert_readme_links() -> None:
             "Release Readiness",
         ],
     )
+
+
+def _assert_license_posture() -> None:
+    readme = _read("README.md")
+    license_text = _read("LICENSE")
+    notice = _read("NOTICE.md")
+    commercial = _read("COMMERCIAL-LICENSE.md")
+    combined = "\n".join([readme, license_text, notice, commercial]).lower()
+
+    _require_all(
+        "licence files",
+        combined,
+        [
+            "polyform noncommercial license 1.0.0",
+            "source-available",
+            "personal and non-commercial",
+            "commercial use requires a separate written",
+            "two hands network ltd",
+            "glyn@twohandsnetwork.co.uk",
+        ],
+    )
+
+    forbidden = [
+        "mit license",
+        "without restriction",
+        "to deal in the software without restriction",
+    ]
+    found = [value for value in forbidden if value in combined]
+    if found:
+        raise AssertionError(f"Licence posture contains stale permissive text: {found}")
+
+    if "open-source document toolkit" in readme.lower():
+        raise AssertionError("README.md still describes Pagewright as open-source.")
 
 
 def _assert_project_map() -> None:

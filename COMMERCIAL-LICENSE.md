@@ -20,4 +20,8 @@ Commercial license requests should include:
 - expected number of users or customers;
 - any requested changes to attribution, warranty, support, or redistribution terms.
 
+For collaboration, information on existing products, or other enquiries, please contact (via Email):
+
+Glyn : glyn@twohandsnetwork.co.uk
+
 No commercial license is granted unless agreed in writing by TWO HANDS NETWORK LTD.
