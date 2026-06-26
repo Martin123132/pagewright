@@ -392,6 +392,7 @@ def _assert_issue_templates() -> None:
             "merge",
             "split",
             "rotate",
+            "compress",
             "images-to-pdf",
             "pdf-to-images",
         ],

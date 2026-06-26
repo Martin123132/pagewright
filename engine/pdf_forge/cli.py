@@ -5,7 +5,15 @@ from typing import Annotated
 
 import typer
 
-from pdf_forge.operations import images_to_pdf, merge_pdfs, pdf_to_images, rotate_pdf, split_pdf
+from pdf_forge.operations import (
+    COMPRESSION_PROFILES,
+    compress_pdf,
+    images_to_pdf,
+    merge_pdfs,
+    pdf_to_images,
+    rotate_pdf,
+    split_pdf,
+)
 
 app = typer.Typer(help="Local-first PDF tools.")
 
@@ -44,6 +52,24 @@ def rotate(
     """Rotate every page in a PDF."""
 
     typer.echo(rotate_pdf(input_pdf, output, degrees))
+
+
+@app.command()
+def compress(
+    input_pdf: Annotated[Path, typer.Argument(help="Input PDF path.")],
+    output: Annotated[Path, typer.Option("--output", "-o", help="Output PDF path.")],
+    profile: Annotated[
+        str,
+        typer.Option(
+            "--profile",
+            "-p",
+            help=f"Compression profile: {', '.join(sorted(COMPRESSION_PROFILES))}.",
+        ),
+    ] = "ebook",
+) -> None:
+    """Compress a PDF with Ghostscript when available."""
+
+    typer.echo(compress_pdf(input_pdf, output, profile))
 
 
 @app.command("images-to-pdf")

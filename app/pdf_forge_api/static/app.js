@@ -97,6 +97,39 @@ const operations = {
       tradeoff: "Changes orientation without extracting or converting pages.",
     },
   },
+  compress: {
+    label: "Compress",
+    noun: "File size",
+    title: "Compress PDF",
+    tagline: "Reduce PDF size with local Ghostscript profiles.",
+    endpoint: "/jobs/compress",
+    demoEndpoint: "/jobs/demo/compress",
+    accept: "application/pdf,.pdf",
+    allowedExtensions: [".pdf"],
+    multiple: false,
+    stagingHint: "One source PDF creates a smaller PDF when Ghostscript is installed.",
+    requirement: "1 PDF",
+    routeLabel: "Shrink",
+    routeTarget: "Smaller PDF",
+    minFiles: 1,
+    fields: [
+      {
+        id: "profile",
+        label: "Profile",
+        type: "select",
+        value: "ebook",
+        options: ["screen", "ebook", "printer", "prepress"],
+      },
+      outputNameField,
+    ],
+    icon: "compress",
+    compare: {
+      action: "Choose compress",
+      guidance: "Best when a PDF needs to be smaller for upload or sharing.",
+      intent: "reduce",
+      tradeoff: "Requires Ghostscript locally; stronger compression can soften images.",
+    },
+  },
   "images-to-pdf": {
     label: "Images",
     noun: "Image set",
@@ -177,6 +210,11 @@ const compareIntents = [
     detail: "Correct page orientation.",
     key: "fix",
     label: "Fix",
+  },
+  {
+    detail: "Shrink a PDF for sharing.",
+    key: "reduce",
+    label: "Reduce",
   },
   {
     detail: "Move between PDFs and image files.",
@@ -343,6 +381,7 @@ function icon(name) {
     layers: '<path d="m12 3 8 4.5-8 4.5-8-4.5z"/><path d="m4 12 8 4.5 8-4.5"/><path d="m4 16.5 8 4.5 8-4.5"/>',
     split: '<path d="M12 3v18"/><path d="M5 6.5h4"/><path d="M5 12h4"/><path d="M5 17.5h4"/><path d="M15 6.5h4"/><path d="M15 12h4"/><path d="M15 17.5h4"/>',
     rotate: '<path d="M5.5 9.5A7 7 0 1 1 7 17.5"/><path d="M5.5 4.8v4.7H10"/>',
+    compress: '<path d="M8 4h8v16H8z"/><path d="m4 8 4 4-4 4"/><path d="m20 8-4 4 4 4"/>',
     image: '<path d="M5 5h14v14H5z"/><path d="m8 15 2.8-3 2.2 2.3 1.3-1.4L17 16"/><path d="M8.5 8.8h.1"/>',
     render: '<path d="M5 4.8h14v10.4H5z"/><path d="M8 19.2h8"/><path d="M12 15.2v4"/><path d="M8.5 8.5h7"/><path d="M8.5 11.5h4"/>',
     close: '<path d="M6 6l12 12M18 6 6 18"/>',
@@ -773,6 +812,7 @@ function getPreviewOutput(operation) {
   if (operation.multiple && operation.routeTarget === "One PDF") return outputName ? `${outputName}.pdf` : "One combined PDF";
   if (operation.routeTarget === "Pages") return outputName ? `${outputName} page PDFs plus a zip` : "Page PDFs plus a zip when needed";
   if (operation.routeTarget === "Orientation") return outputName ? `${outputName}.pdf` : "One rotated PDF";
+  if (operation.routeTarget === "Smaller PDF") return outputName ? `${outputName}.pdf` : "One compressed PDF";
   if (operation.routeTarget === "Image PDF") return outputName ? `${outputName}.pdf` : "One PDF from the image order";
   if (operation.routeTarget === "PNGs") return outputName ? `${outputName} PNG pages plus a zip` : "PNG pages plus a zip when needed";
   return operation.routeTarget;
@@ -812,6 +852,7 @@ function getSuggestedOutputName(operation = currentOperation()) {
     merge: "merged",
     split: "pages",
     rotate: "rotated",
+    compress: "compressed",
     "images-to-pdf": "document",
     "pdf-to-images": "images",
   };

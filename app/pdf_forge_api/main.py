@@ -12,7 +12,9 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pdf_forge.operations import (
+    COMPRESSION_PROFILES,
     PdfForgeError,
+    compress_pdf,
     images_to_pdf,
     merge_pdfs,
     pdf_to_images,
@@ -41,7 +43,7 @@ from pdf_forge_api.storage import (
     save_upload,
 )
 
-OPERATIONS = ["merge", "split", "rotate", "images-to-pdf", "pdf-to-images"]
+OPERATIONS = ["merge", "split", "rotate", "compress", "images-to-pdf", "pdf-to-images"]
 IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".png", ".webp"}
 PDF_EXTENSIONS = {".pdf"}
 
@@ -134,6 +136,36 @@ def create_app(paths: StoragePaths | None = None) -> FastAPI:
             job_id,
             storage_paths,
             lambda: [rotate_pdf(input_pdf, output, degrees)],
+        )
+
+    @app.post("/jobs/compress", response_model=JobResult)
+    async def compress_job(
+        file: Annotated[UploadFile, File(description="PDF file to compress.")],
+        profile: Annotated[
+            str,
+            Form(description="Compression profile: screen, ebook, printer, or prepress."),
+        ] = "ebook",
+        output_name: Annotated[str | None, Form(description="Optional output file name.")] = None,
+    ) -> JobResult:
+        job_id, upload_dir, output_dir = _prepare_job(storage_paths)
+        input_pdf = await _save_single_upload(
+            file,
+            upload_dir,
+            "input.pdf",
+            allowed_extensions=PDF_EXTENSIONS,
+        )
+        profile_key = _compression_profile(profile)
+        output = _named_output(
+            output_dir,
+            output_name,
+            f"{Path(input_pdf).stem}-compressed",
+            ".pdf",
+        )
+        return _run_job(
+            "compress",
+            job_id,
+            storage_paths,
+            lambda: [compress_pdf(input_pdf, output, profile_key)],
         )
 
     @app.post("/jobs/images-to-pdf", response_model=JobResult)
@@ -261,6 +293,19 @@ def _run_demo_job(
             lambda: [rotate_pdf(input_pdf, output_dir / "rotated-demo.pdf", 90)],
         )
 
+    if operation == "compress":
+        input_pdf = create_demo_pdf(
+            upload_dir / "compression-source.pdf",
+            "Compression Demo",
+            pages=3,
+        )
+        return _run_job(
+            operation,
+            job_id,
+            paths,
+            lambda: [compress_pdf(input_pdf, output_dir / "compressed-demo.pdf", "ebook")],
+        )
+
     if operation == "images-to-pdf":
         inputs = [
             create_demo_image(upload_dir / "cover.png", "Cover", "#f4ded7"),
@@ -352,6 +397,17 @@ def _named_output(
 ) -> Path:
     safe_stem = _output_stem(output_name, fallback_stem)
     return output_dir / f"{safe_stem}{suffix}"
+
+
+def _compression_profile(profile: str) -> str:
+    profile_key = profile.lower().strip()
+    if profile_key not in COMPRESSION_PROFILES:
+        valid_profiles = ", ".join(sorted(COMPRESSION_PROFILES))
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown compression profile. Expected one of: {valid_profiles}.",
+        )
+    return profile_key
 
 
 def _bundle_file_name(output_name: str | None, operation: str) -> str | None:

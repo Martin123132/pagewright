@@ -1,10 +1,21 @@
 from __future__ import annotations
 
+import shutil
+import subprocess
+from collections.abc import Callable
 from pathlib import Path
 
 import fitz
 from PIL import Image
 from pypdf import PdfReader, PdfWriter
+
+COMPRESSION_PROFILES = {
+    "screen": "/screen",
+    "ebook": "/ebook",
+    "printer": "/printer",
+    "prepress": "/prepress",
+}
+GHOSTSCRIPT_COMMANDS = ("gswin64c", "gswin32c", "gs")
 
 
 class PdfForgeError(RuntimeError):
@@ -82,6 +93,49 @@ def rotate_pdf(input_pdf: str | Path, output: str | Path, degrees: int) -> Path:
     return output_path
 
 
+def compress_pdf(
+    input_pdf: str | Path,
+    output: str | Path,
+    profile: str = "ebook",
+    *,
+    executable: str | Path | None = None,
+    runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+) -> Path:
+    """Compress a PDF with Ghostscript using a named quality profile."""
+
+    profile_key = profile.lower().strip()
+    pdf_settings = COMPRESSION_PROFILES.get(profile_key)
+    if not pdf_settings:
+        valid_profiles = ", ".join(sorted(COMPRESSION_PROFILES))
+        raise PdfForgeError(f"Unknown compression profile. Expected one of: {valid_profiles}.")
+
+    input_path = _path(input_pdf)
+    output_path = _path(output)
+    if input_path == output_path:
+        raise PdfForgeError("Compression output must be a different file from the input PDF.")
+
+    command_path = str(executable or _find_ghostscript())
+    _ensure_parent(output_path)
+    command = [
+        command_path,
+        "-sDEVICE=pdfwrite",
+        "-dCompatibilityLevel=1.4",
+        f"-dPDFSETTINGS={pdf_settings}",
+        "-dNOPAUSE",
+        "-dQUIET",
+        "-dBATCH",
+        f"-sOutputFile={output_path}",
+        str(input_path),
+    ]
+    result = runner(command, capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "Ghostscript failed.").strip()
+        raise PdfForgeError(f"Compression failed: {detail}")
+    if not output_path.exists() or output_path.stat().st_size == 0:
+        raise PdfForgeError("Compression did not create an output PDF.")
+    return output_path
+
+
 def images_to_pdf(images: list[str | Path], output: str | Path) -> Path:
     if not images:
         raise PdfForgeError("At least one image is required.")
@@ -132,6 +186,18 @@ def pdf_to_images(
             written.append(output_path)
 
     return written
+
+
+def _find_ghostscript() -> str:
+    for command in GHOSTSCRIPT_COMMANDS:
+        executable = shutil.which(command)
+        if executable:
+            return executable
+    commands = ", ".join(GHOSTSCRIPT_COMMANDS)
+    raise PdfForgeError(
+        "PDF compression requires Ghostscript. Install Ghostscript and ensure one of "
+        f"{commands} is available on PATH."
+    )
 
 
 def _parse_pages(spec: str, page_count: int) -> list[int]:

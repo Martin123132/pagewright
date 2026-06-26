@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pdf_forge_api.main import OPERATIONS
-from synthetic_proof import run_synthetic_proof
+from synthetic_proof import PROOF_OPERATIONS, run_synthetic_proof
 
 CHECK_PROOF_NAME = "public-proof-check"
 TOP_LEVEL_FIELDS = {"proof", "privacy", "operations"}
@@ -16,7 +15,7 @@ BANNED_FIELDS = {"path", "download_url", "job_id", "scratch_dir", "outputs_dir"}
 def main() -> None:
     manifest = run_synthetic_proof(proof_name=CHECK_PROOF_NAME, emit=False)
     _assert_public_manifest(manifest)
-    print(f"Synthetic proof check passed for: {', '.join(OPERATIONS)}")
+    print(f"Synthetic proof check passed for: {', '.join(PROOF_OPERATIONS)}")
 
 
 def _assert_public_manifest(manifest: dict[str, Any]) -> None:
@@ -32,9 +31,9 @@ def _assert_public_manifest(manifest: dict[str, Any]) -> None:
         raise AssertionError("Manifest operations must be a list.")
 
     operation_names = [operation["operation"] for operation in operations]
-    if operation_names != OPERATIONS:
+    if operation_names != PROOF_OPERATIONS:
         raise AssertionError(
-            f"Proof operations drifted: expected {OPERATIONS}, got {operation_names}"
+            f"Proof operations drifted: expected {PROOF_OPERATIONS}, got {operation_names}"
         )
 
     for operation in operations:

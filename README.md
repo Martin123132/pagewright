@@ -25,10 +25,11 @@ Need the quick orientation page? See [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md
 - Merge PDFs
 - Split or extract page ranges
 - Rotate pages
+- Compress PDFs with local Ghostscript profiles when Ghostscript is installed
 - Convert images to PDF
 - Render PDF pages to images
 - Read and update document metadata
-- Prepare hooks for compression and OCR
+- Prepare hooks for OCR
 
 ## Architecture
 
@@ -85,6 +86,8 @@ Choose any route, click **Stage sample**, then **Build**. Staged PDFs show a loc
 3. Confirm staged files show filename, size, and page count where available (PDFs only).
 4. Click **Build** and open the output card in **Outputs**.
 5. In the outputs list, use the local cleanup controls to clear stale job folders and keep your `D:\` workspace tidy.
+
+The **Compress PDF** route uses Ghostscript profiles (`screen`, `ebook`, `printer`, `prepress`). If Ghostscript is not installed or not on `PATH`, Pagewright keeps the job local and returns a clear missing-tool message.
 
 If you drop an unsupported file type, the Mission strip now offers a **guided recovery action** (for example, jump to Images or Extract/Combine routes), so you can recover quickly instead of getting stuck.
 

@@ -6,11 +6,12 @@ from pathlib import Path
 from typing import Any
 
 from fastapi.testclient import TestClient
-from pdf_forge_api.main import OPERATIONS, create_app
+from pdf_forge_api.main import create_app
 from pdf_forge_api.storage import StoragePaths
 
 PROOF_NAME = "public-proof"
 MANIFEST_FILE = "public-proof-manifest.json"
+PROOF_OPERATIONS = ["merge", "split", "rotate", "images-to-pdf", "pdf-to-images"]
 
 
 def main() -> None:
@@ -30,7 +31,7 @@ def run_synthetic_proof(proof_name: str = PROOF_NAME, emit: bool = True) -> dict
     client = TestClient(create_app(paths))
     operations: list[dict[str, Any]] = []
 
-    for operation in OPERATIONS:
+    for operation in PROOF_OPERATIONS:
         response = client.post(f"/jobs/demo/{operation}")
         response.raise_for_status()
         data = response.json()

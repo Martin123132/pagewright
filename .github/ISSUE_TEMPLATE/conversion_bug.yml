@@ -16,6 +16,7 @@ body:
         - merge
         - split
         - rotate
+        - compress
         - images-to-pdf
         - pdf-to-images
         - metadata

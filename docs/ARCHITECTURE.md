@@ -16,11 +16,12 @@ UI or API
 - `pypdf` for structural PDF operations: merge, split, rotate, metadata.
 - `PyMuPDF` for rendering PDF pages to images.
 - `Pillow` for image normalization and image-to-PDF output.
+- Ghostscript for optional PDF compression profiles when installed locally.
 
 ## External Tool Candidates
 
 - `qpdf` for structural repair and transformations.
-- Ghostscript for compression profiles.
+- qpdf for future compression/repair fallbacks.
 - OCRmyPDF plus Tesseract for OCR.
 - Poppler utilities for fallback rendering and inspection.
 

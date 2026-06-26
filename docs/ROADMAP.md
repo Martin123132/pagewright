@@ -10,6 +10,7 @@ Make routine PDF work free, local-first, private, and boringly reliable.
    - merge
    - split/extract ranges
    - rotate
+   - compress with Ghostscript profiles when available
    - image to PDF
    - PDF to images
    - metadata read/write
@@ -20,7 +21,7 @@ Make routine PDF work free, local-first, private, and boringly reliable.
 ## Later
 
 - OCR scanned PDFs with OCRmyPDF/Tesseract integration.
-- Compression profiles using Ghostscript and qpdf.
+- qpdf-backed compression or repair fallbacks.
 - Redaction that actually removes content, not visual overlays.
 - Fill and flatten AcroForms.
 - Watermarks, page numbers, headers, footers.

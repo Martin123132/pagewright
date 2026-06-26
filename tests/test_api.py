@@ -31,6 +31,7 @@ def test_health_uses_configured_d_scoped_paths(client: TestClient) -> None:
     assert data["status"] == "ok"
     assert data["scratch_dir"].lower().startswith("d:")
     assert data["outputs_dir"].lower().startswith("d:")
+    assert "compress" in data["operations"]
 
 
 def test_index_serves_product_workbench(client: TestClient) -> None:
@@ -38,8 +39,8 @@ def test_index_serves_product_workbench(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert "Pagewright" in response.text
-    assert "/static/app.js?v=20260623a" in response.text
-    assert "/static/styles.css?v=20260623a" in response.text
+    assert "/static/app.js?v=20260626a" in response.text
+    assert "/static/styles.css?v=20260626a" in response.text
     assert "Try sample" in response.text
     assert "Stage sample" in response.text
     assert "routeBoard" in response.text
@@ -80,6 +81,11 @@ def test_static_assets_are_served(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert "const operations" in response.text
+    assert "/jobs/compress" in response.text
+    assert "/jobs/demo/compress" in response.text
+    assert "Compress PDF" in response.text
+    assert "Ghostscript" in response.text
+    assert "Smaller PDF" in response.text
     assert "/jobs/demo/merge" in response.text
     assert "Download all" in response.text
     assert "Claim Ready" in response.text
@@ -451,6 +457,60 @@ def test_rotate_job_rejects_invalid_degrees(client: TestClient) -> None:
 
     assert response.status_code == 400
     assert "multiple of 90" in response.json()["detail"]
+
+
+def test_compress_job_uses_named_output_and_profile(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str] = {}
+
+    def fake_compress(input_pdf: Path, output: Path, profile: str) -> Path:
+        captured["profile"] = profile
+        output.write_bytes(input_pdf.read_bytes())
+        return output
+
+    monkeypatch.setattr("pdf_forge_api.main.compress_pdf", fake_compress)
+
+    response = client.post(
+        "/jobs/compress",
+        data={"profile": "screen", "output_name": "Small Upload"},
+        files={"file": ("source.pdf", _pdf_bytes(), "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["operation"] == "compress"
+    assert captured["profile"] == "screen"
+    assert data["files"][0]["file_name"] == "Small_Upload.pdf"
+    assert Path(data["files"][0]["path"]).drive.lower() == "d:"
+
+
+def test_compress_job_rejects_unknown_profile(client: TestClient) -> None:
+    response = client.post(
+        "/jobs/compress",
+        data={"profile": "tiny"},
+        files={"file": ("source.pdf", _pdf_bytes(), "application/pdf")},
+    )
+
+    assert response.status_code == 400
+    assert "Unknown compression profile" in response.json()["detail"]
+
+
+def test_compress_job_reports_missing_ghostscript(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("pdf_forge.operations.shutil.which", lambda _: None)
+
+    response = client.post(
+        "/jobs/compress",
+        data={"profile": "ebook"},
+        files={"file": ("source.pdf", _pdf_bytes(), "application/pdf")},
+    )
+
+    assert response.status_code == 400
+    assert "requires Ghostscript" in response.json()["detail"]
 
 
 def _pdf_bytes(pages: int = 1) -> bytes:
