@@ -8,7 +8,9 @@ The FastAPI service exposes the engine through local job endpoints with:
 - route-level upload validation for expected file types
 - merge validation that requires at least two PDFs
 - structured operation errors
-- Ghostscript-backed compression profiles with a clear missing-tool error
+- Ghostscript-backed compression profiles with a clear missing-tool status endpoint
+- `PAGEWRIGHT_GHOSTSCRIPT_PATH` support for portable or non-`PATH` Ghostscript installs
+- before/after size metadata for successful compression jobs
 - output files written under `D:\CodexProjects\pdf-forge\outputs`
 - local cleanup controls for ignored output folders under the configured outputs directory
 

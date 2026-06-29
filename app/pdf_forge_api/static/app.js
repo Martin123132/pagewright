@@ -282,6 +282,14 @@ const state = {
   bundle: null,
   compareIntent: "all",
   compareOpen: false,
+  compressionTool: {
+    available: false,
+    command: null,
+    loading: true,
+    message: "Checking Ghostscript...",
+    profiles: [],
+    source: null,
+  },
   dragFileIndex: null,
   fileDetails: [],
   files: [],
@@ -507,7 +515,50 @@ function renderOperation() {
 }
 
 function renderSettingsForm() {
-  dom.settingsForm.innerHTML = currentOperation().fields.map(renderField).join("");
+  const operation = currentOperation();
+  const preserveValues = dom.settingsForm.dataset.operationKey === state.operationKey;
+  const existingValues = preserveValues ? getCurrentFieldValues(operation) : {};
+  const fieldsMarkup = operation.fields.map(renderField).join("");
+  const toolMarkup = state.operationKey === "compress" ? renderCompressionToolStatus() : "";
+  dom.settingsForm.innerHTML = fieldsMarkup + toolMarkup;
+  dom.settingsForm.dataset.operationKey = state.operationKey;
+
+  if (preserveValues) {
+    for (const [fieldId, value] of Object.entries(existingValues)) {
+      const field = dom.settingsForm.elements[fieldId];
+      if (field) field.value = value;
+    }
+  }
+}
+
+function renderCompressionToolStatus() {
+  const status = state.compressionTool;
+  const stateLabel = status.loading ? "checking" : status.available ? "ready" : "missing";
+  const title = status.loading
+    ? "Checking Ghostscript"
+    : status.available
+    ? "Ghostscript ready"
+    : "Ghostscript needed";
+  const detail =
+    status.message ||
+    "Set PAGEWRIGHT_GHOSTSCRIPT_PATH to a Ghostscript executable or add Ghostscript to PATH.";
+  const command = status.command ? `<span>Command ${escapeHtml(status.command)}</span>` : "";
+  const profiles =
+    status.profiles?.length > 0 ? `<span>Profiles ${escapeHtml(status.profiles.join(", "))}</span>` : "";
+
+  return `
+    <div class="tool-status" data-state="${stateLabel}" role="status">
+      <div class="tool-status-heading">
+        <span>${icon(status.available ? "check" : "alert")}</span>
+        <strong>${escapeHtml(title)}</strong>
+      </div>
+      <p>${escapeHtml(detail)}</p>
+      <div class="tool-status-facts">
+        ${command}
+        ${profiles}
+      </div>
+    </div>
+  `;
 }
 
 function renderPresetPanel() {
@@ -705,7 +756,12 @@ function renderJobPreview() {
 }
 
 function canRunJob() {
-  return !state.running && state.files.length >= currentOperation().minFiles;
+  const operation = currentOperation();
+  return (
+    !state.running &&
+    state.files.length >= operation.minFiles &&
+    getSettingIssues(operation).length === 0
+  );
 }
 
 function renderOrderGuide(operation) {
@@ -927,7 +983,7 @@ function renderResults() {
           ${icon("download")}
           <div class="result-meta">
             <div class="result-name">${escapeHtml(result.file_name)}</div>
-            <div class="result-size">${formatBytes(result.size_bytes)}</div>
+            <div class="result-size">${renderResultSize(result)}</div>
           </div>
           <a class="download-button" href="${result.download_url}" download>
             ${icon("download")}
@@ -940,6 +996,31 @@ function renderResults() {
   dom.resultsList.innerHTML = buildMarkup + receiptMarkup + claimMarkup + bundleMarkup + fileMarkup;
   renderPath();
   renderMission();
+}
+
+function renderResultSize(result) {
+  const savings = formatCompressionSavings(result);
+  return `${formatBytes(result.size_bytes)}${savings ? `<span class="result-saving">${savings}</span>` : ""}`;
+}
+
+function formatCompressionSavings(result) {
+  if (
+    typeof result.source_size_bytes !== "number" ||
+    typeof result.size_delta_bytes !== "number" ||
+    typeof result.size_reduction_percent !== "number"
+  ) {
+    return "";
+  }
+
+  if (result.size_delta_bytes > 0) {
+    return `Saved ${formatBytes(result.size_delta_bytes)} (${result.size_reduction_percent.toFixed(1)}%)`;
+  }
+
+  if (result.size_delta_bytes < 0) {
+    return `Larger by ${formatBytes(Math.abs(result.size_delta_bytes))}`;
+  }
+
+  return "No size change";
 }
 
 function renderBuildStatus(phase) {
@@ -1836,7 +1917,7 @@ function getMissionControlItems() {
 }
 
 function getSettingIssues(operation = currentOperation()) {
-  return operation.fields
+  const issues = operation.fields
     .map((field) => {
       const element = dom.settingsForm.elements[field.id];
       const value = element?.value ?? field.value ?? "";
@@ -1852,6 +1933,17 @@ function getSettingIssues(operation = currentOperation()) {
       return "";
     })
     .filter(Boolean);
+
+  const toolIssue = getCompressionToolIssue();
+  if (toolIssue) issues.push(toolIssue);
+  return issues;
+}
+
+function getCompressionToolIssue() {
+  if (state.operationKey !== "compress") return "";
+  if (state.compressionTool.loading) return "Ghostscript check still running";
+  if (!state.compressionTool.available) return "Ghostscript not detected";
+  return "";
 }
 
 function getMissionState() {
@@ -2542,6 +2634,41 @@ async function hydrateStatus() {
   }
 }
 
+async function hydrateCompressionToolStatus() {
+  try {
+    const response = await fetch("/tools/ghostscript");
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.detail || "Ghostscript status unavailable");
+    }
+    state.compressionTool = {
+      available: Boolean(data.available),
+      command: data.command || null,
+      loading: false,
+      message: data.message || "",
+      profiles: Array.isArray(data.profiles) ? data.profiles : [],
+      source: data.source || null,
+    };
+  } catch {
+    state.compressionTool = {
+      available: false,
+      command: null,
+      loading: false,
+      message: "Ghostscript status unavailable. Check the local API before compressing.",
+      profiles: [],
+      source: null,
+    };
+  }
+
+  if (state.operationKey === "compress") {
+    renderSettingsForm();
+    renderFiles();
+    renderRouteIntel();
+    renderMission();
+    renderJobPreview();
+  }
+}
+
 function loadRecent() {
   try {
     state.recentLimit = readRecentLimit();
@@ -2855,4 +2982,5 @@ loadWelcomeState();
 renderOperation();
 renderOutputCleanup();
 hydrateStatus();
+hydrateCompressionToolStatus();
 refreshOutputCleanup();

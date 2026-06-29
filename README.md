@@ -87,7 +87,7 @@ Choose any route, click **Stage sample**, then **Build**. Staged PDFs show a loc
 4. Click **Build** and open the output card in **Outputs**.
 5. In the outputs list, use the local cleanup controls to clear stale job folders and keep your `D:\` workspace tidy.
 
-The **Compress PDF** route uses Ghostscript profiles (`screen`, `ebook`, `printer`, `prepress`). If Ghostscript is not installed or not on `PATH`, Pagewright keeps the job local and returns a clear missing-tool message.
+The **Compress PDF** route uses Ghostscript profiles (`screen`, `ebook`, `printer`, `prepress`). If Ghostscript is not installed or not on `PATH`, Pagewright keeps the job local and returns a clear missing-tool message. For portable or non-`PATH` installs, set `PAGEWRIGHT_GHOSTSCRIPT_PATH` in your local shell to the Ghostscript executable, preferably on `D:\` for this project. The workbench checks Ghostscript status before build and shows compression size savings after a successful run.
 
 If you drop an unsupported file type, the Mission strip now offers a **guided recovery action** (for example, jump to Images or Extract/Combine routes), so you can recover quickly instead of getting stuck.
 

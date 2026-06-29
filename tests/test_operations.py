@@ -3,8 +3,10 @@ from pathlib import Path
 
 import pytest
 from pdf_forge.operations import (
+    GHOSTSCRIPT_PATH_ENV,
     PdfForgeError,
     compress_pdf,
+    ghostscript_status,
     images_to_pdf,
     merge_pdfs,
     rotate_pdf,
@@ -78,12 +80,44 @@ def test_compress_pdf_requires_ghostscript_when_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     source = _fixture_pdf(tmp_path / "source.pdf")
+    monkeypatch.delenv(GHOSTSCRIPT_PATH_ENV, raising=False)
     monkeypatch.setattr("pdf_forge.operations.shutil.which", lambda _: None)
 
     with pytest.raises(PdfForgeError) as exc:
         compress_pdf(source, tmp_path / "compressed.pdf", "ebook")
 
     assert "requires Ghostscript" in str(exc.value)
+
+
+def test_ghostscript_status_uses_configured_env_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executable = tmp_path / "gswin64c.exe"
+    executable.write_text("stub", encoding="utf-8")
+    monkeypatch.setenv(GHOSTSCRIPT_PATH_ENV, str(executable))
+    monkeypatch.setattr("pdf_forge.operations.shutil.which", lambda _: None)
+
+    status = ghostscript_status()
+
+    assert status.available is True
+    assert status.command == str(executable.resolve())
+    assert status.source == GHOSTSCRIPT_PATH_ENV
+
+
+def test_ghostscript_status_reports_bad_configured_env_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    missing = tmp_path / "missing-gs.exe"
+    monkeypatch.setenv(GHOSTSCRIPT_PATH_ENV, str(missing))
+    monkeypatch.setattr("pdf_forge.operations.shutil.which", lambda _: None)
+
+    status = ghostscript_status()
+
+    assert status.available is False
+    assert status.source == GHOSTSCRIPT_PATH_ENV
+    assert GHOSTSCRIPT_PATH_ENV in status.message
 
 
 def test_compress_pdf_rejects_unknown_profile(tmp_path: Path) -> None:

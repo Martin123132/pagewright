@@ -4,7 +4,7 @@ import shutil
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 from urllib.parse import quote
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -15,6 +15,7 @@ from pdf_forge.operations import (
     COMPRESSION_PROFILES,
     PdfForgeError,
     compress_pdf,
+    ghostscript_status,
     images_to_pdf,
     merge_pdfs,
     pdf_to_images,
@@ -31,6 +32,7 @@ from pdf_forge_api.models import (
     OutputFile,
     OutputJobList,
     OutputJobSummary,
+    ToolStatus,
 )
 from pdf_forge_api.storage import (
     StorageError,
@@ -66,6 +68,17 @@ def create_app(paths: StoragePaths | None = None) -> FastAPI:
             scratch_dir=str(storage_paths.scratch_dir),
             outputs_dir=str(storage_paths.outputs_dir),
             operations=OPERATIONS,
+        )
+
+    @app.get("/tools/ghostscript", response_model=ToolStatus)
+    def ghostscript_tool() -> ToolStatus:
+        status = ghostscript_status()
+        return ToolStatus(
+            available=status.available,
+            command=Path(status.command).name if status.command else None,
+            source=status.source,
+            message=status.message,
+            profiles=sorted(COMPRESSION_PROFILES),
         )
 
     @app.post("/jobs/merge", response_model=JobResult)
@@ -161,11 +174,15 @@ def create_app(paths: StoragePaths | None = None) -> FastAPI:
             f"{Path(input_pdf).stem}-compressed",
             ".pdf",
         )
+        source_size = Path(input_pdf).stat().st_size
         return _run_job(
             "compress",
             job_id,
             storage_paths,
             lambda: [compress_pdf(input_pdf, output, profile_key)],
+            output_metadata=lambda outputs: {
+                outputs[0].resolve(): _compression_output_metadata(source_size, outputs[0])
+            },
         )
 
     @app.post("/jobs/images-to-pdf", response_model=JobResult)
@@ -304,6 +321,12 @@ def _run_demo_job(
             job_id,
             paths,
             lambda: [compress_pdf(input_pdf, output_dir / "compressed-demo.pdf", "ebook")],
+            output_metadata=lambda outputs: {
+                outputs[0].resolve(): _compression_output_metadata(
+                    input_pdf.stat().st_size,
+                    outputs[0],
+                )
+            },
         )
 
     if operation == "images-to-pdf":
@@ -463,11 +486,15 @@ def _run_job(
     paths: StoragePaths,
     operation_callback: Callable[[], list[Path]],
     bundle_name: str | None = None,
+    output_metadata: Callable[[list[Path]], dict[Path, dict[str, Any]]] | None = None,
 ) -> JobResult:
     try:
         output_paths = operation_callback()
     except (PdfForgeError, StorageError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    raw_metadata = output_metadata(output_paths) if output_metadata else {}
+    metadata_by_path = {path.resolve(): metadata for path, metadata in raw_metadata.items()}
 
     bundle = (
         _bundle_model(paths, job_id, operation, output_paths, bundle_name)
@@ -477,12 +504,25 @@ def _run_job(
     return JobResult(
         job_id=job_id,
         operation=operation,
-        files=[_output_model(paths, job_id, output_path) for output_path in output_paths],
+        files=[
+            _output_model(
+                paths,
+                job_id,
+                output_path,
+                metadata=metadata_by_path.get(output_path.resolve()),
+            )
+            for output_path in output_paths
+        ],
         bundle=bundle,
     )
 
 
-def _output_model(paths: StoragePaths, job_id: str, path: Path) -> OutputFile:
+def _output_model(
+    paths: StoragePaths,
+    job_id: str,
+    path: Path,
+    metadata: dict[str, Any] | None = None,
+) -> OutputFile:
     resolved = path.resolve()
     if not resolved.is_relative_to(paths.outputs_dir):
         raise HTTPException(status_code=500, detail="Output path escaped storage root.")
@@ -491,7 +531,24 @@ def _output_model(paths: StoragePaths, job_id: str, path: Path) -> OutputFile:
         download_url=f"/outputs/{job_id}/{quote(resolved.name)}",
         path=str(resolved),
         size_bytes=resolved.stat().st_size,
+        **(metadata or {}),
     )
+
+
+def _compression_output_metadata(
+    source_size_bytes: int,
+    output_path: Path,
+) -> dict[str, int | float]:
+    output_size_bytes = output_path.stat().st_size
+    size_delta_bytes = source_size_bytes - output_size_bytes
+    size_reduction_percent = (
+        round((size_delta_bytes / source_size_bytes) * 100, 1) if source_size_bytes > 0 else 0.0
+    )
+    return {
+        "source_size_bytes": source_size_bytes,
+        "size_delta_bytes": size_delta_bytes,
+        "size_reduction_percent": size_reduction_percent,
+    }
 
 
 def _bundle_model(

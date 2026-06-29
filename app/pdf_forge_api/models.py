@@ -8,6 +8,9 @@ class OutputFile(BaseModel):
     download_url: str
     path: str
     size_bytes: int = Field(ge=0)
+    source_size_bytes: int | None = Field(default=None, ge=0)
+    size_delta_bytes: int | None = None
+    size_reduction_percent: float | None = None
 
 
 class OutputBundle(OutputFile):
@@ -26,6 +29,14 @@ class HealthResponse(BaseModel):
     scratch_dir: str
     outputs_dir: str
     operations: list[str]
+
+
+class ToolStatus(BaseModel):
+    available: bool
+    command: str | None = None
+    source: str | None = None
+    message: str
+    profiles: list[str] = Field(default_factory=list)
 
 
 class OutputJobSummary(BaseModel):

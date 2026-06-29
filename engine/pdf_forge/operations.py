@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 import fitz
@@ -16,10 +18,19 @@ COMPRESSION_PROFILES = {
     "prepress": "/prepress",
 }
 GHOSTSCRIPT_COMMANDS = ("gswin64c", "gswin32c", "gs")
+GHOSTSCRIPT_PATH_ENV = "PAGEWRIGHT_GHOSTSCRIPT_PATH"
 
 
 class PdfForgeError(RuntimeError):
     """Raised when a Pagewright operation cannot be completed."""
+
+
+@dataclass(frozen=True)
+class GhostscriptStatus:
+    available: bool
+    command: str | None
+    source: str | None
+    message: str
 
 
 def _path(path: str | Path) -> Path:
@@ -188,15 +199,53 @@ def pdf_to_images(
     return written
 
 
+def ghostscript_status() -> GhostscriptStatus:
+    command, source, message = _ghostscript_candidate()
+    if command:
+        return GhostscriptStatus(
+            available=True,
+            command=command,
+            source=source,
+            message=f"Ghostscript is available from {source}.",
+        )
+    return GhostscriptStatus(available=False, command=None, source=source, message=message)
+
+
 def _find_ghostscript() -> str:
+    command, _source, message = _ghostscript_candidate()
+    if command:
+        return command
+    raise PdfForgeError(message)
+
+
+def _ghostscript_candidate() -> tuple[str | None, str | None, str]:
+    configured = os.environ.get(GHOSTSCRIPT_PATH_ENV, "").strip()
+    if configured:
+        configured_path = Path(configured).expanduser()
+        if configured_path.exists() and configured_path.is_file():
+            return str(configured_path.resolve()), GHOSTSCRIPT_PATH_ENV, ""
+
+        executable = shutil.which(configured)
+        if executable:
+            return executable, GHOSTSCRIPT_PATH_ENV, ""
+
+        return (
+            None,
+            GHOSTSCRIPT_PATH_ENV,
+            f"{GHOSTSCRIPT_PATH_ENV} points to a missing Ghostscript executable. "
+            "Set it to gswin64c.exe, gswin32c.exe, or gs, or remove it to use PATH lookup.",
+        )
+
     for command in GHOSTSCRIPT_COMMANDS:
         executable = shutil.which(command)
         if executable:
-            return executable
+            return executable, "PATH", ""
     commands = ", ".join(GHOSTSCRIPT_COMMANDS)
-    raise PdfForgeError(
+    return (
+        None,
+        "PATH",
         "PDF compression requires Ghostscript. Install Ghostscript and ensure one of "
-        f"{commands} is available on PATH."
+        f"{commands} is available on PATH, or set {GHOSTSCRIPT_PATH_ENV} to the executable."
     )
 
 

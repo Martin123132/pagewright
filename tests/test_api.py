@@ -7,6 +7,7 @@ from zipfile import ZipFile
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
+from pdf_forge.operations import GhostscriptStatus
 from pdf_forge_api.main import _output_job_dir, create_app
 from pdf_forge_api.storage import StoragePaths
 from PIL import Image
@@ -180,6 +181,12 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert "deleteOutputJob" in response.text
     assert "clearDeletedOutputReferences" in response.text
     assert "data-delete-output" in response.text
+    assert "/tools/ghostscript" in response.text
+    assert "PAGEWRIGHT_GHOSTSCRIPT_PATH" in response.text
+    assert "compressionTool" in response.text
+    assert "renderCompressionToolStatus" in response.text
+    assert "formatCompressionSavings" in response.text
+    assert "size_reduction_percent" in response.text
     assert "Output name" in response.text
     assert "output_name" in response.text
 
@@ -196,6 +203,32 @@ def test_static_assets_are_served(client: TestClient) -> None:
     assert ".rail-summary" in styles.text
     assert ".recent-route" in styles.text
     assert ".cleanup-delete[data-state=\"confirm\"]" in styles.text
+    assert ".tool-status" in styles.text
+    assert ".result-saving" in styles.text
+
+
+def test_ghostscript_tool_status_sanitizes_command_name(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "pdf_forge_api.main.ghostscript_status",
+        lambda: GhostscriptStatus(
+            available=True,
+            command="D:/Tools/Ghostscript/bin/gswin64c.exe",
+            source="PAGEWRIGHT_GHOSTSCRIPT_PATH",
+            message="Ghostscript is available from PAGEWRIGHT_GHOSTSCRIPT_PATH.",
+        ),
+    )
+
+    response = client.get("/tools/ghostscript")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["available"] is True
+    assert data["command"] == "gswin64c.exe"
+    assert data["source"] == "PAGEWRIGHT_GHOSTSCRIPT_PATH"
+    assert data["profiles"] == ["ebook", "prepress", "printer", "screen"]
 
 
 def test_merge_job_creates_downloadable_pdf(client: TestClient) -> None:
@@ -467,7 +500,8 @@ def test_compress_job_uses_named_output_and_profile(
 
     def fake_compress(input_pdf: Path, output: Path, profile: str) -> Path:
         captured["profile"] = profile
-        output.write_bytes(input_pdf.read_bytes())
+        source = input_pdf.read_bytes()
+        output.write_bytes(source[: max(1, len(source) // 2)])
         return output
 
     monkeypatch.setattr("pdf_forge_api.main.compress_pdf", fake_compress)
@@ -482,8 +516,13 @@ def test_compress_job_uses_named_output_and_profile(
     data = response.json()
     assert data["operation"] == "compress"
     assert captured["profile"] == "screen"
-    assert data["files"][0]["file_name"] == "Small_Upload.pdf"
-    assert Path(data["files"][0]["path"]).drive.lower() == "d:"
+    output_file = data["files"][0]
+    assert output_file["file_name"] == "Small_Upload.pdf"
+    assert Path(output_file["path"]).drive.lower() == "d:"
+    assert output_file["source_size_bytes"] > output_file["size_bytes"]
+    expected_delta = output_file["source_size_bytes"] - output_file["size_bytes"]
+    assert output_file["size_delta_bytes"] == expected_delta
+    assert output_file["size_reduction_percent"] > 0
 
 
 def test_compress_job_rejects_unknown_profile(client: TestClient) -> None:
@@ -501,6 +540,7 @@ def test_compress_job_reports_missing_ghostscript(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.delenv("PAGEWRIGHT_GHOSTSCRIPT_PATH", raising=False)
     monkeypatch.setattr("pdf_forge.operations.shutil.which", lambda _: None)
 
     response = client.post(
